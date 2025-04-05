@@ -36,6 +36,10 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User updateUser(User user) {
+        return userRepository.save(user);
+    }
+
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
@@ -61,5 +65,15 @@ public class UserService {
     public StartupProfile getStartupProfileById(Long startupProfileId) {
         return startupProfileRepository.findById(startupProfileId)
             .orElseThrow(() -> new RuntimeException("Startup profile not found with id: " + startupProfileId));
+    }
+    
+    public StartupProfile getStartupProfileByUserId(Long userId) {
+        return startupProfileRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("Startup profile not found for user id: " + userId));
+    }
+    
+    public InvestorProfile getInvestorProfileByUserId(Long userId) {
+        return investorProfileRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("Investor profile not found for user id: " + userId));
     }
 } 

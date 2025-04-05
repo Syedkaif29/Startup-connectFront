@@ -10,21 +10,11 @@ import Register from "./pages/Register";
 import StartupDashboard from "./pages/StartupDashboard";
 import InvestorDashboard from "./pages/InvestorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import Startups from "./pages/Startups";
+import Investors from "./pages/Investors";
 import authService from './services/authService';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+import { ThemeProvider } from './utils/ThemeContext';
 
 // Protected Route component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -44,7 +34,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 function App() {
   return (
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
+      <ThemeProvider>
         <CssBaseline />
         <Router>
           <Navbar />
@@ -52,6 +42,15 @@ function App() {
             <Route path="/" element={<Home />} /> {/*src\pages\Home.js */}
             <Route path="/login" element={<Login />} /> {/*src\pages\Login.js */}
             <Route path="/register" element={<Register />} /> {/*src\pages\Register.js */}
+            <Route path="/startups" element={<Startups />} />
+            <Route
+              path="/investors"
+              element={
+                <ProtectedRoute>
+                  <Investors />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin-dashboard"
               element={

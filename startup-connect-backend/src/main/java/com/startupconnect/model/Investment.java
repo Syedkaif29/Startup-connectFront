@@ -18,11 +18,13 @@ public class Investment {
 
     @ManyToOne
     @JoinColumn(name = "investor_id")
-    private User investor;
+    private InvestorProfile investor;
 
     private Double amount;
+    private String stage;
+    private LocalDateTime investmentDate;
     private String status;
-    private Double equityPercentage;
+    private String description;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

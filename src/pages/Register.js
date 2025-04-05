@@ -27,6 +27,47 @@ import {
 import { Link } from 'react-router-dom';
 import authService from '../services/authService';
 
+const INDUSTRY_OPTIONS = [
+  'Technology',
+  'Healthcare',
+  'Finance',
+  'Education',
+  'Agriculture',
+  'Manufacturing',
+  'Retail',
+  'Real Estate',
+  'Energy',
+  'Transportation',
+  'Media & Entertainment',
+  'Other'
+];
+
+const INVESTMENT_FOCUS_OPTIONS = [
+  'Technology',
+  'Healthcare',
+  'Finance',
+  'Education',
+  'Agriculture',
+  'Manufacturing',
+  'Retail',
+  'Real Estate',
+  'Energy',
+  'Transportation',
+  'Media & Entertainment',
+  'Other'
+];
+
+const FUNDING_STAGE_OPTIONS = [
+  'Idea Stage',
+  'Pre-Seed',
+  'Seed',
+  'Series A',
+  'Series B',
+  'Series C',
+  'Growth',
+  'IPO Ready'
+];
+
 const Register = () => {
     const [activeStep, setActiveStep] = useState(0);
     const [error, setError] = useState('');
@@ -92,27 +133,60 @@ const Register = () => {
             if (formData.role === 'STARTUP') {
                 if (!formData.startupName || !formData.industry || !formData.fundingStage) {
                     setError('Please fill in all required startup fields');
+                    setLoading(false);
                     return;
                 }
             } else if (formData.role === 'INVESTOR') {
                 if (!formData.investorName || !formData.investmentFocus || !formData.minimumInvestment) {
                     setError('Please fill in all required investor fields');
+                    setLoading(false);
                     return;
                 }
             }
 
-            const response = await authService.register(formData);
+            // Prepare data for registration
+            const registrationData = {
+                email: formData.email,
+                password: formData.password,
+                fullName: formData.fullName,
+                role: formData.role
+            };
+
+            // Add role-specific data
+            if (formData.role === 'STARTUP') {
+                registrationData.startupName = formData.startupName;
+                registrationData.startupDescription = formData.startupDescription || '';
+                registrationData.industry = formData.industry;
+                registrationData.fundingStage = formData.fundingStage;
+            } else if (formData.role === 'INVESTOR') {
+                registrationData.investorName = formData.investorName;
+                registrationData.investorDescription = formData.investorDescription || '';
+                registrationData.investmentFocus = formData.investmentFocus;
+                registrationData.minimumInvestment = formData.minimumInvestment.toString();
+            }
+
+            console.log('Sending registration data:', registrationData);
+            const response = await authService.register(registrationData);
+            console.log('Registration response:', response);
             
-            // Redirect based on user role
-            if (response.user.role === 'ADMIN') {
-                navigate('/admin-dashboard');
-            } else if (response.user.role === 'STARTUP') {
-                navigate('/startup-dashboard');
-            } else if (response.user.role === 'INVESTOR') {
-                navigate('/investor-dashboard');
+            if (response && response.token) {
+                // Store the token and user data
+                localStorage.setItem('user', JSON.stringify(response));
+                
+                // Redirect based on user role
+                if (response.user.role === 'ADMIN') {
+                    navigate('/admin-dashboard');
+                } else if (response.user.role === 'STARTUP') {
+                    navigate('/startup-dashboard');
+                } else if (response.user.role === 'INVESTOR') {
+                    navigate('/investor-dashboard');
+                }
+            } else {
+                throw new Error('Invalid response from server');
             }
         } catch (err) {
-            setError(err.message || 'Registration failed. Please try again.');
+            console.error('Registration error:', err);
+            setError(typeof err === 'string' ? err : (err.message || 'Registration failed. Please try again.'));
         } finally {
             setLoading(false);
         }
@@ -210,27 +284,35 @@ const Register = () => {
                             <TextField
                                 required
                                 fullWidth
+                                select
                                 label="Industry"
                                 name="industry"
                                 value={formData.industry}
                                 onChange={handleChange}
-                            />
+                            >
+                                {INDUSTRY_OPTIONS.map((option) => (
+                                    <MenuItem key={option} value={option}>
+                                        {option}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </Grid>
                         <Grid item xs={12}>
-                            <FormControl fullWidth required>
-                                <InputLabel>Funding Stage</InputLabel>
-                                <Select
-                                    name="fundingStage"
-                                    value={formData.fundingStage}
-                                    onChange={handleChange}
-                                    label="Funding Stage"
-                                >
-                                    <MenuItem value="Seed">Seed</MenuItem>
-                                    <MenuItem value="Early">Early Stage</MenuItem>
-                                    <MenuItem value="Growth">Growth Stage</MenuItem>
-                                    <MenuItem value="Late">Late Stage</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <TextField
+                                required
+                                fullWidth
+                                select
+                                label="Funding Stage"
+                                name="fundingStage"
+                                value={formData.fundingStage}
+                                onChange={handleChange}
+                            >
+                                {FUNDING_STAGE_OPTIONS.map((option) => (
+                                    <MenuItem key={option} value={option}>
+                                        {option}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </Grid>
                     </Grid>
                 ) : (
@@ -260,11 +342,18 @@ const Register = () => {
                             <TextField
                                 required
                                 fullWidth
+                                select
                                 label="Investment Focus"
                                 name="investmentFocus"
                                 value={formData.investmentFocus}
                                 onChange={handleChange}
-                            />
+                            >
+                                {INVESTMENT_FOCUS_OPTIONS.map((option) => (
+                                    <MenuItem key={option} value={option}>
+                                        {option}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </Grid>
                         <Grid item xs={12}>
                             <TextField

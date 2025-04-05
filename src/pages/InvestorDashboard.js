@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -7,31 +7,63 @@ import {
   Typography,
   Card,
   CardContent,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
+  MonetizationOn,
+  Business,
   TrendingUp,
   AccountBalance,
   Assessment,
-  Notifications,
-  Business,
-  MonetizationOn,
   Timeline,
   Group,
 } from '@mui/icons-material';
+import investorService from '../services/investorService';
 
 const InvestorDashboard = () => {
+  const [investorProfile, setInvestorProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchInvestorData();
+  }, []);
+
+  const fetchInvestorData = async () => {
+    try {
+      setLoading(true);
+      const profile = await investorService.getInvestorProfile();
+      setInvestorProfile(profile);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch investor data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ flexGrow: 1, py: 3 }}>
       <Container maxWidth="lg">
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
         <Grid container spacing={3}>
           {/* Welcome Header */}
           <Grid item xs={12}>
             <Typography variant="h4" component="h1" gutterBottom>
-              Investor Dashboard
+              Welcome, {investorProfile?.investorName || 'Investor'}
             </Typography>
           </Grid>
 
@@ -43,9 +75,9 @@ const InvestorDashboard = () => {
                   <MonetizationOn sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
                   <Box>
                     <Typography color="textSecondary" gutterBottom>
-                      Total Investment
+                      Investment Focus
                     </Typography>
-                    <Typography variant="h5">$2.5M</Typography>
+                    <Typography variant="h5">{investorProfile?.investmentFocus || 'N/A'}</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -59,9 +91,9 @@ const InvestorDashboard = () => {
                   <Business sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
                   <Box>
                     <Typography color="textSecondary" gutterBottom>
-                      Active Startups
+                      Minimum Investment
                     </Typography>
-                    <Typography variant="h5">12</Typography>
+                    <Typography variant="h5">${investorProfile?.minimumInvestment || 'N/A'}</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -75,53 +107,32 @@ const InvestorDashboard = () => {
                   <TrendingUp sx={{ fontSize: 40, color: 'warning.main', mr: 2 }} />
                   <Box>
                     <Typography color="textSecondary" gutterBottom>
-                      Portfolio Growth
+                      Portfolio Size
                     </Typography>
-                    <Typography variant="h5">+18.5%</Typography>
+                    <Typography variant="h5">$2.5M</Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Investment Opportunities */}
-          <Grid item xs={12} md={6}>
+          {/* Investment Description */}
+          <Grid item xs={12}>
             <Paper elevation={3} sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
-                Investment Opportunities
+                About Your Investment Strategy
               </Typography>
-              <List>
-                {[
-                  { 
-                    icon: <Business color="primary" />, 
-                    text: 'TechStart AI', 
-                    secondary: 'AI/ML Platform - Seeking $500K Seed Round' 
-                  },
-                  { 
-                    icon: <Timeline color="secondary" />, 
-                    text: 'GreenEnergy Solutions', 
-                    secondary: 'Clean Energy Tech - Pre-Series A' 
-                  },
-                  { 
-                    icon: <Group color="warning" />, 
-                    text: 'HealthTech Innovations', 
-                    secondary: 'Healthcare Platform - Series A' 
-                  },
-                ].map((item, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.text} secondary={item.secondary} />
-                  </ListItem>
-                ))}
-              </List>
+              <Typography variant="body1" paragraph>
+                {investorProfile?.description || 'No description available.'}
+              </Typography>
             </Paper>
           </Grid>
 
-          {/* Portfolio Performance */}
-          <Grid item xs={12} md={6}>
+          {/* Quick Actions */}
+          <Grid item xs={12}>
             <Paper elevation={3} sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
-                Portfolio Performance
+                Quick Actions
               </Typography>
               <Grid container spacing={2}>
                 {[
@@ -130,7 +141,7 @@ const InvestorDashboard = () => {
                   { title: 'Deal Pipeline', icon: <Timeline /> },
                   { title: 'Network', icon: <Group /> },
                 ].map((action, index) => (
-                  <Grid item xs={6} key={index}>
+                  <Grid item xs={6} md={3} key={index}>
                     <Card 
                       sx={{ 
                         textAlign: 'center', 

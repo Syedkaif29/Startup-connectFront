@@ -55,6 +55,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                .requestMatchers("/api/startups/**").permitAll()  // Allow public access to startups endpoints
                 .requestMatchers("/api/auth/users").hasRole("ADMIN")  // Only ADMIN can get all users
                 .requestMatchers("/api/auth/users/{id}").hasAnyRole("ADMIN", "STARTUP", "INVESTOR")  // Users can get their own data
                 .anyRequest().authenticated()

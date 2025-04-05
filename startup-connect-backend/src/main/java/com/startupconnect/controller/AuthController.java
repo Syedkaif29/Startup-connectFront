@@ -55,14 +55,22 @@ public class AuthController {
                 startupProfile.setIndustry((String) registrationData.get("industry"));
                 startupProfile.setFundingStage((String) registrationData.get("fundingStage"));
                 userService.saveStartupProfile(startupProfile);
+                
+                // Update user with profile
+                registeredUser.setStartupProfile(startupProfile);
+                userService.updateUser(registeredUser);
             } else if (user.getRole() == UserRole.INVESTOR) {
                 InvestorProfile investorProfile = new InvestorProfile();
                 investorProfile.setUser(registeredUser);
                 investorProfile.setInvestorName((String) registrationData.get("investorName"));
                 investorProfile.setDescription((String) registrationData.get("investorDescription"));
                 investorProfile.setInvestmentFocus((String) registrationData.get("investmentFocus"));
-                investorProfile.setMinimumInvestment(Double.parseDouble((String) registrationData.get("minimumInvestment")));
+                investorProfile.setMinimumInvestment(Double.parseDouble(registrationData.get("minimumInvestment").toString()));
                 userService.saveInvestorProfile(investorProfile);
+                
+                // Update user with profile
+                registeredUser.setInvestorProfile(investorProfile);
+                userService.updateUser(registeredUser);
             }
 
             // Generate token for immediate login
