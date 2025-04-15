@@ -43,9 +43,9 @@ const authService = {
             if (error.response?.data) {
                 throw error.response.data;
             } else if (error.message) {
-                throw error.message;
+                throw new Error(error.message);
             } else {
-                throw 'Registration failed. Please try again.';
+                throw new Error('Registration failed. Please try again.');
             }
         }
     },
@@ -61,6 +61,24 @@ const authService = {
     getToken: () => {
         const user = JSON.parse(localStorage.getItem('user'));
         return user?.token;
+    },
+
+    updatePassword: async (userId, newPassword) => {
+        try {
+            const user = authService.getCurrentUser();
+            const response = await axios.put(`${API_URL}/users/${userId}/password`, {
+                password: newPassword
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${user?.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error updating password:', error);
+            throw error.response?.data || 'Failed to update password';
+        }
     }
 };
 

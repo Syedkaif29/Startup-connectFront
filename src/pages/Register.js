@@ -1,23 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Box, 
-    Button, 
-    Container,
-    TextField,
-    Typography,
-    Card, 
-    CardContent,
-    FormControl,
-    FormControlLabel,
-    FormLabel,
-    RadioGroup,
-    Radio,
-    Stepper,
-    Step,
-    StepLabel,
-    Alert,
-    Link as MuiLink,
+import { 
+  Box, 
+  Button, 
+  Container, 
+  TextField, 
+  Typography, 
+  FormControl,
+  Stepper,
+  Step,
+  StepLabel,
+  Alert,
     Grid,
     Paper,
     InputLabel,
@@ -69,62 +62,62 @@ const FUNDING_STAGE_OPTIONS = [
 ];
 
 const Register = () => {
-    const [activeStep, setActiveStep] = useState(0);
-    const [error, setError] = useState('');
+  const [activeStep, setActiveStep] = useState(0);
+  const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
-    
-    const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
         // Step 1: Account Information
-        email: '',
-        password: '',
-        confirmPassword: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
         fullName: '',
         role: '',
-        
+    
         // Step 2: Profile Information
         // Startup Profile
-        startupName: '',
-        startupDescription: '',
-        industry: '',
-        fundingStage: '',
-        
+    startupName: '',
+    startupDescription: '',
+    industry: '',
+    fundingStage: '',
+    
         // Investor Profile
-        investorName: '',
-        investorDescription: '',
-        investmentFocus: '',
+    investorName: '',
+    investorDescription: '',
+    investmentFocus: '',
         minimumInvestment: ''
-    });
+  });
 
-    const handleChange = (e) => {
+  const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
-    };
+  };
 
-    const handleNext = () => {
+  const handleNext = () => {
         // Validate step 1
-        if (activeStep === 0) {
+    if (activeStep === 0) {
             if (!formData.email || !formData.password || !formData.confirmPassword || !formData.fullName || !formData.role) {
-                setError('Please fill in all required fields');
-                return;
-            }
-            if (formData.password !== formData.confirmPassword) {
-                setError('Passwords do not match');
-                return;
-            }
+        setError('Please fill in all required fields');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
         }
-        setError('');
-        setActiveStep((prevStep) => prevStep + 1);
-    };
+      setError('');
+    setActiveStep((prevStep) => prevStep + 1);
+  };
 
-    const handleBack = () => {
-        setActiveStep((prevStep) => prevStep - 1);
-    };
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
+  };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
         setError('');
         setLoading(true);
 
@@ -134,16 +127,16 @@ const Register = () => {
                 if (!formData.startupName || !formData.industry || !formData.fundingStage) {
                     setError('Please fill in all required startup fields');
                     setLoading(false);
-                    return;
-                }
+        return;
+      }
             } else if (formData.role === 'INVESTOR') {
                 if (!formData.investorName || !formData.investmentFocus || !formData.minimumInvestment) {
                     setError('Please fill in all required investor fields');
                     setLoading(false);
-                    return;
-                }
-            }
-
+        return;
+      }
+    }
+    
             // Prepare data for registration
             const registrationData = {
                 email: formData.email,
@@ -198,37 +191,37 @@ const Register = () => {
                 return (
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
-                            <TextField
-                                required
-                                fullWidth
-                                label="Email Address"
-                                name="email"
+                  <TextField
+                    required
+                    fullWidth
+                    label="Email Address"
+                    name="email"
                                 type="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                            />
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                required
-                                fullWidth
+                  <TextField
+                    required
+                    fullWidth
                                 label="Password"
-                                name="password"
-                                type="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                            />
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                required
-                                fullWidth
+                  <TextField
+                    required
+                    fullWidth
                                 label="Confirm Password"
-                                name="confirmPassword"
-                                type="password"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                            />
+                    name="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                  />
                         </Grid>
                         <Grid item xs={12}>
                             <TextField
@@ -246,13 +239,13 @@ const Register = () => {
                                 <Select
                                     name="role"
                                     value={formData.role}
-                                    onChange={handleChange}
+                      onChange={handleChange}
                                     label="Role"
                                 >
                                     <MenuItem value="STARTUP">Startup</MenuItem>
                                     <MenuItem value="INVESTOR">Investor</MenuItem>
                                 </Select>
-                            </FormControl>
+                  </FormControl>
                         </Grid>
                     </Grid>
                 );
@@ -260,35 +253,35 @@ const Register = () => {
                 return formData.role === 'STARTUP' ? (
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
-                            <TextField
-                                required
-                                fullWidth
+                    <TextField
+                      required
+                      fullWidth
                                 label="Startup Name"
-                                name="startupName"
-                                value={formData.startupName}
-                                onChange={handleChange}
-                            />
+                      name="startupName"
+                      value={formData.startupName}
+                      onChange={handleChange}
+                    />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
+                    <TextField
+                      fullWidth
                                 label="Description"
-                                name="startupDescription"
-                                multiline
-                                rows={4}
-                                value={formData.startupDescription}
-                                onChange={handleChange}
-                            />
+                      name="startupDescription"
+                      multiline
+                      rows={4}
+                      value={formData.startupDescription}
+                      onChange={handleChange}
+                    />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                required
-                                fullWidth
+                    <TextField
+                      required
+                      fullWidth
                                 select
                                 label="Industry"
-                                name="industry"
-                                value={formData.industry}
-                                onChange={handleChange}
+                      name="industry"
+                      value={formData.industry}
+                      onChange={handleChange}
                             >
                                 {INDUSTRY_OPTIONS.map((option) => (
                                     <MenuItem key={option} value={option}>
@@ -298,14 +291,14 @@ const Register = () => {
                             </TextField>
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
+                    <TextField
                                 required
-                                fullWidth
+                      fullWidth
                                 select
                                 label="Funding Stage"
-                                name="fundingStage"
-                                value={formData.fundingStage}
-                                onChange={handleChange}
+                      name="fundingStage"
+                      value={formData.fundingStage}
+                      onChange={handleChange}
                             >
                                 {FUNDING_STAGE_OPTIONS.map((option) => (
                                     <MenuItem key={option} value={option}>
@@ -318,35 +311,35 @@ const Register = () => {
                 ) : (
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
-                            <TextField
-                                required
-                                fullWidth
+                    <TextField
+                      required
+                      fullWidth
                                 label="Investor Name"
-                                name="investorName"
-                                value={formData.investorName}
-                                onChange={handleChange}
-                            />
+                      name="investorName"
+                      value={formData.investorName}
+                      onChange={handleChange}
+                    />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
+                    <TextField
+                      fullWidth
                                 label="Description"
-                                name="investorDescription"
-                                multiline
-                                rows={4}
-                                value={formData.investorDescription}
-                                onChange={handleChange}
-                            />
+                      name="investorDescription"
+                      multiline
+                      rows={4}
+                      value={formData.investorDescription}
+                      onChange={handleChange}
+                    />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                required
-                                fullWidth
+                    <TextField
+                      required
+                      fullWidth
                                 select
                                 label="Investment Focus"
-                                name="investmentFocus"
-                                value={formData.investmentFocus}
-                                onChange={handleChange}
+                      name="investmentFocus"
+                      value={formData.investmentFocus}
+                      onChange={handleChange}
                             >
                                 {INVESTMENT_FOCUS_OPTIONS.map((option) => (
                                     <MenuItem key={option} value={option}>
@@ -356,15 +349,15 @@ const Register = () => {
                             </TextField>
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
+                    <TextField
                                 required
-                                fullWidth
+                      fullWidth
                                 label="Minimum Investment"
-                                name="minimumInvestment"
-                                type="number"
-                                value={formData.minimumInvestment}
-                                onChange={handleChange}
-                            />
+                      name="minimumInvestment"
+                      type="number"
+                      value={formData.minimumInvestment}
+                      onChange={handleChange}
+                    />
                         </Grid>
                     </Grid>
                 );
@@ -406,16 +399,16 @@ const Register = () => {
                             {activeStep !== 0 && (
                                 <Button onClick={handleBack} sx={{ mr: 1 }}>
                                     Back
-                                </Button>
+                  </Button>
                             )}
                             {activeStep === 0 ? (
-                                <Button
-                                    variant="contained"
-                                    onClick={handleNext}
+                  <Button
+                    variant="contained"
+                    onClick={handleNext}
                                     disabled={loading}
-                                >
-                                    Next
-                                </Button>
+                  >
+                    Next
+                  </Button>
                             ) : (
                                 <Button
                                     type="submit"
@@ -424,13 +417,13 @@ const Register = () => {
                                 >
                                     Create Account
                                 </Button>
-                            )}
-                        </Box>
-                    </Box>
+                )}
+              </Box>
+              </Box>
                 </Paper>
-            </Box>
-        </Container>
-    );
+      </Box>
+    </Container>
+  );
 };
 
 export default Register;

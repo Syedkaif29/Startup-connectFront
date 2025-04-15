@@ -20,17 +20,14 @@ import {
   DialogContent,
   DialogActions,
   Tabs,
-  Tab,
-  Divider
+  Tab
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Person as PersonIcon,
-  AttachMoney as MoneyIcon,
-  TrendingUp as TrendingUpIcon,
-  Business as BusinessIcon,
+  AccountBalance as AccountBalanceIcon,
   Close as CloseIcon,
-  AccountBalance as AccountBalanceIcon
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import investorService from '../services/investorService';
 import authService from '../services/authService';

@@ -30,6 +30,12 @@ public class StartupProfile {
     @Column(name = "funding_stage", nullable = false)
     private String fundingStage;
 
+    @Column(name = "team_size")
+    private String teamSize;
+
+    @Column
+    private String website;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

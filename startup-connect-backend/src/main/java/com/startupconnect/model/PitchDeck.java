@@ -1,6 +1,5 @@
 package com.startupconnect.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -13,10 +12,9 @@ public class PitchDeck {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "startup_profile_id", nullable = false)
-    private StartupProfile startupProfile;
+    @JoinColumn(name = "startup_id", nullable = false)
+    private StartupProfile startup;
 
     @Column(nullable = false)
     private String title;
@@ -24,17 +22,23 @@ public class PitchDeck {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "file_url", nullable = false)
-    private String fileUrl;
+    @Column(name = "file_path", nullable = false)
+    private String filePath;
 
-    @Column(name = "file_type")
-    private String fileType;
+    @Column(name = "file_name", nullable = false)
+    private String fileName;
 
     @Column(name = "file_size")
     private Long fileSize;
 
+    @Column(name = "file_type")
+    private String fileType;
+
     @Column(name = "version")
-    private Integer version;
+    private Integer version = 1;
+
+    @Column(name = "is_public")
+    private Boolean isPublic = false;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

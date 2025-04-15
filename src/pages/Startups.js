@@ -18,15 +18,11 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Divider
+  DialogActions
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Business as BusinessIcon,
-  AttachMoney as MoneyIcon,
-  TrendingUp as TrendingUpIcon,
-  Description as DescriptionIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
 import startupService from '../services/startupService';

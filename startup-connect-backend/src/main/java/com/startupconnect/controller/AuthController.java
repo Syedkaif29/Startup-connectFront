@@ -14,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -32,6 +33,9 @@ public class AuthController {
 
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Map<String, Object> registrationData) {
@@ -130,6 +134,28 @@ public class AuthController {
             if (currentUser.getRole() == UserRole.ADMIN || currentUser.getId().equals(id)) {
                 User user = userService.getUserById(id);
                 return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/users/{id}/password")
+    public ResponseEntity<?> updatePassword(@PathVariable Long id, @RequestBody Map<String, String> passwordData) {
+        try {
+            // Get current user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            User currentUser = userService.findByEmail(userDetails.getUsername());
+
+            // Check if user is ADMIN or updating their own password
+            if (currentUser.getRole() == UserRole.ADMIN || currentUser.getId().equals(id)) {
+                User user = userService.getUserById(id);
+                user.setPassword(passwordEncoder.encode(passwordData.get("password")));
+                userService.updateUser(user);
+                return ResponseEntity.ok().build();
             } else {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
             }
