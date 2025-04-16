@@ -18,17 +18,29 @@ public class InvestorProfile {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "investor_name", nullable = false)
-    private String investorName;
+    @Column(name = "company_name", nullable = false)
+    private String companyName;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(nullable = false)
+    private String sector;
+
+    @Column(name = "investment_range_min", nullable = false)
+    private Double investmentRangeMin;
+
+    @Column(name = "investment_range_max", nullable = false)
+    private Double investmentRangeMax;
+
+    @Column(nullable = false)
+    private String location;
 
     @Column(name = "investment_focus", nullable = false)
     private String investmentFocus;
 
-    @Column(name = "minimum_investment", nullable = false)
-    private Double minimumInvestment;
+    @Column(name = "active_investments_count")
+    private Integer activeInvestmentsCount = 0;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

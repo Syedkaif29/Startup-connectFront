@@ -3,7 +3,12 @@ com\startupconnect\model\UserRole.class
 com\startupconnect\repository\TransactionRepository.class
 com\startupconnect\security\JwtRequestFilter.class
 com\startupconnect\service\CustomUserDetailsService.class
+com\startupconnect\controller\InvestmentOfferController.class
 com\startupconnect\model\PitchDeck.class
+com\startupconnect\model\InvestorActivity.class
+com\startupconnect\model\InvestmentOffer.class
+com\startupconnect\repository\InvestorActivityRepository.class
+com\startupconnect\model\Investment$InvestmentStatus.class
 com\startupconnect\controller\AdminController.class
 repository\JpaRepository.class
 com\startupconnect\service\InvestorService.class
@@ -23,9 +28,14 @@ com\startupconnect\repository\InvestmentRepository.class
 com\startupconnect\repository\StartupRepository.class
 com\startupconnect\controller\AuthController.class
 com\startupconnect\controller\InvestorProfileController.class
+com\startupconnect\service\InvestmentOfferService.class
 com\startupconnect\service\InvestmentService.class
 com\startupconnect\model\User.class
+com\startupconnect\repository\InvestmentOfferRepository.class
+com\startupconnect\service\InvestorDashboardService.class
 com\startupconnect\repository\StartupProfileRepository.class
+com\startupconnect\controller\InvestorDashboardController.class
+com\startupconnect\model\InvestmentOffer$OfferStatus.class
 com\startupconnect\service\UserService.class
 com\startupconnect\model\Transaction.class
 com\startupconnect\repository\InvestorProfileRepository.class

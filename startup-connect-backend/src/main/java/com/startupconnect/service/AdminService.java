@@ -63,10 +63,13 @@ public class AdminService {
     @Transactional
     public InvestorProfile updateInvestor(Long id, InvestorProfile investorDetails) {
         InvestorProfile investor = getInvestorById(id);
-        investor.setInvestorName(investorDetails.getInvestorName());
-        investor.setDescription(investorDetails.getDescription());
+        investor.setCompanyName(investorDetails.getCompanyName());
+        investor.setSector(investorDetails.getSector());
+        investor.setInvestmentRangeMin(investorDetails.getInvestmentRangeMin());
+        investor.setInvestmentRangeMax(investorDetails.getInvestmentRangeMax());
+        investor.setLocation(investorDetails.getLocation());
         investor.setInvestmentFocus(investorDetails.getInvestmentFocus());
-        investor.setMinimumInvestment(investorDetails.getMinimumInvestment());
+        investor.setDescription(investorDetails.getDescription());
         return investorProfileRepository.save(investor);
     }
 

@@ -44,17 +44,19 @@ const investorService = {
 
     getInvestorProfile: async () => {
         try {
-            const user = authService.getCurrentUser();
-            if (!user || !user.token) {
-                throw new Error('No authenticated user found');
-            }
-            const response = await axios.get(`${API_URL}/investor-profile/${user.user.id}`, {
-                headers: { 
-                    'Authorization': `Bearer ${user.token}`,
+            const response = await axios.get(`${API_URL}/investor/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${authService.getToken()}`,
                     'Content-Type': 'application/json'
                 }
             });
-            return response.data;
+            
+            // Ensure investment range is properly formatted as numbers
+            return {
+                ...response.data,
+                investmentRangeMin: Number(response.data.investmentRangeMin),
+                investmentRangeMax: Number(response.data.investmentRangeMax)
+            };
         } catch (error) {
             console.error('Error fetching investor profile:', error);
             throw error.response?.data || error.message;
@@ -63,17 +65,26 @@ const investorService = {
 
     updateInvestorProfile: async (profileData) => {
         try {
-            const user = authService.getCurrentUser();
-            if (!user || !user.token) {
-                throw new Error('No authenticated user found');
-            }
-            const response = await axios.put(`${API_URL}/investor-profile/${user.user.id}`, profileData, {
-                headers: { 
-                    'Authorization': `Bearer ${user.token}`,
+            // Format investment range as numbers
+            const formattedData = {
+                ...profileData,
+                investmentRangeMin: Number(profileData.investmentRangeMin),
+                investmentRangeMax: Number(profileData.investmentRangeMax)
+            };
+
+            const response = await axios.put(`${API_URL}/investor/profile`, formattedData, {
+                headers: {
+                    'Authorization': `Bearer ${authService.getToken()}`,
                     'Content-Type': 'application/json'
                 }
             });
-            return response.data;
+            
+            // Ensure investment range is properly formatted in the response
+            return {
+                ...response.data,
+                investmentRangeMin: Number(response.data.investmentRangeMin),
+                investmentRangeMax: Number(response.data.investmentRangeMax)
+            };
         } catch (error) {
             console.error('Error updating investor profile:', error);
             throw error.response?.data || error.message;
@@ -96,6 +107,100 @@ const investorService = {
         } catch (error) {
             console.error('Error fetching trending investments:', error);
             throw error.response?.data || error.message;
+        }
+    },
+
+    getDashboardStats: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/investor/dashboard/stats`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || error.message;
+        }
+    },
+
+    getSectorDistribution: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/investor/dashboard/sector-distribution`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || error.message;
+        }
+    },
+
+    getRecentActivities: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/investor/dashboard/activities`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || error.message;
+        }
+    },
+
+    getPortfolio: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/investor/portfolio`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || error.message;
+        }
+    },
+
+    getPortfolioPerformance: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/investor/portfolio/performance`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || error.message;
+        }
+    },
+
+    getInvestmentDetails: async (investmentId) => {
+        try {
+            const response = await axios.get(`${API_URL}/investor/investments/${investmentId}`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || error.message;
+        }
+    },
+
+    invest: async (investmentData) => {
+        try {
+            const user = authService.getCurrentUser();
+            if (!user || !user.token) {
+                throw new Error('No authenticated user found');
+            }
+
+            const response = await axios.post(`${API_URL}/investments`, investmentData, {
+                headers: {
+                    'Authorization': `Bearer ${user.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error making investment:', error);
+            throw new Error(error.response?.data?.message || 'Failed to process investment');
+        }
+    },
+
+    getMyInvestments: async () => {
+        try {
+            const user = authService.getCurrentUser();
+            if (!user || !user.token) {
+                throw new Error('No authenticated user found');
+            }
+
+            const response = await axios.get(`${API_URL}/investments/my`, {
+                headers: {
+                    'Authorization': `Bearer ${user.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching investments:', error);
+            throw new Error(error.response?.data?.message || 'Failed to fetch investments');
         }
     }
 };

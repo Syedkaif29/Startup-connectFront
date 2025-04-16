@@ -31,6 +31,7 @@ import { styled } from '@mui/material/styles';
 import startupService from '../services/startupService';
 import authService from '../services/authService';
 import PitchDeckManager from '../components/PitchDeckManager';
+import InvestmentOfferManager from '../components/InvestmentOfferManager';
 
 // Move styled components outside the component
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -179,7 +180,7 @@ const StartupDashboard = () => {
   }
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom>
           Welcome, {startupProfile?.startupName || 'Startup'}!
@@ -314,6 +315,10 @@ const StartupDashboard = () => {
             }
         }}
       />
+
+      <Grid item xs={12}>
+        <InvestmentOfferManager startupId={startupProfile?.id} />
+      </Grid>
 
       {/* Edit Profile Dialog */}
       <Dialog open={editDialogOpen} onClose={handleEditProfileClose} maxWidth="md" fullWidth>

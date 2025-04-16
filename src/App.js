@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import { Provider } from 'react-redux';
 import store from './store'; // Import the store
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
@@ -6,19 +6,58 @@ import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer"; 
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from './utils/ThemeContext';
-import { CircularProgress, Box } from '@mui/material';
+import { createTheme } from '@mui/material/styles';
+import { CircularProgress, Box, Alert } from '@mui/material';
 import authService from './services/authService';
+import Portfolio from './pages/Portfolio';
+import StartupProfile from './pages/StartupProfile';
+
+// Error boundary component
+const ErrorBoundary = ({ children }) => {
+  const [hasError, setHasError] = React.useState(false);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    const handleError = (error) => {
+      setHasError(true);
+      setError(error);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          Something went wrong. Please try refreshing the page.
+        </Alert>
+      </Box>
+    );
+  }
+
+  return children;
+};
+
+// Lazy load components with error handling
+const lazyLoad = (importFn) => {
+  return lazy(() => importFn().catch((error) => {
+    console.error('Error loading component:', error);
+    return { default: () => <ErrorBoundary><Alert severity="error">Failed to load component. Please try refreshing the page.</Alert></ErrorBoundary> };
+  }));
+};
 
 // Lazy load components
-const Home = lazy(() => import("./pages/Home"));
-const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
-const RegisterAdmin = lazy(() => import("./pages/RegisterAdmin"));
-const StartupDashboard = lazy(() => import("./pages/StartupDashboard"));
-const InvestorDashboard = lazy(() => import("./pages/InvestorDashboard"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const Startups = lazy(() => import("./pages/Startups"));
-const Investors = lazy(() => import("./pages/Investors"));
+const Home = lazyLoad(() => import("./pages/Home"));
+const Login = lazyLoad(() => import("./pages/Login"));
+const Register = lazyLoad(() => import("./pages/Register"));
+const RegisterAdmin = lazyLoad(() => import("./pages/RegisterAdmin"));
+const StartupDashboard = lazyLoad(() => import("./pages/StartupDashboard"));
+const InvestorDashboard = lazyLoad(() => import("./pages/InvestorDashboard"));
+const AdminDashboard = lazyLoad(() => import("./pages/AdminDashboard"));
+const Startups = lazyLoad(() => import("./pages/Startups"));
+const Investors = lazyLoad(() => import("./pages/Investors"));
 
 // Loading component
 const LoadingFallback = () => (
@@ -43,12 +82,30 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 function App() {
+  const [darkMode, setDarkMode] = useState(false);
+
+  const theme = createTheme({
+    palette: {
+      mode: darkMode ? 'dark' : 'light',
+      primary: {
+        main: '#1976d2',
+      },
+      secondary: {
+        main: '#dc004e',
+      },
+    },
+  });
+
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+  };
+
   return (
     <Provider store={store}>
-      <ThemeProvider>
+      <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
-          <Navbar />
+          <Navbar darkMode={darkMode} toggleTheme={toggleTheme} />
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               <Route path="/" element={<Home />} /> {/*src\pages\Home.js */}
@@ -88,6 +145,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/startups/:id" element={<StartupProfile />} />
+              <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/" element={<Navigate to="/login" />} />
             </Routes>
           </Suspense>

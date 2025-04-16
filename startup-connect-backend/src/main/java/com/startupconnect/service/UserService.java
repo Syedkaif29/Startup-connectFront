@@ -9,6 +9,7 @@ import com.startupconnect.repository.InvestorProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -54,12 +55,27 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public StartupProfile saveStartupProfile(StartupProfile profile) {
-        return startupProfileRepository.save(profile);
+    @Transactional
+    public InvestorProfile saveInvestorProfile(InvestorProfile profile) {
+        if (profile.getUser() == null) {
+            throw new RuntimeException("Investor profile must be associated with a user");
+        }
+        
+        // Validate investment range if provided
+        if (profile.getInvestmentRangeMin() != null && profile.getInvestmentRangeMax() != null) {
+            if (profile.getInvestmentRangeMin() > profile.getInvestmentRangeMax()) {
+                throw new RuntimeException("Minimum investment range cannot be greater than maximum");
+            }
+            if (profile.getInvestmentRangeMin() < 0 || profile.getInvestmentRangeMax() < 0) {
+                throw new RuntimeException("Investment range values cannot be negative");
+            }
+        }
+        
+        return investorProfileRepository.save(profile);
     }
 
-    public InvestorProfile saveInvestorProfile(InvestorProfile profile) {
-        return investorProfileRepository.save(profile);
+    public StartupProfile saveStartupProfile(StartupProfile profile) {
+        return startupProfileRepository.save(profile);
     }
 
     public StartupProfile getStartupProfileById(Long startupProfileId) {
@@ -75,5 +91,10 @@ public class UserService {
     public InvestorProfile getInvestorProfileByUserId(Long userId) {
         return investorProfileRepository.findByUserId(userId)
             .orElseThrow(() -> new RuntimeException("Investor profile not found for user id: " + userId));
+    }
+
+    public InvestorProfile getInvestorProfileById(Long investorId) {
+        return investorProfileRepository.findById(investorId)
+            .orElseThrow(() -> new RuntimeException("Investor profile not found with id: " + investorId));
     }
 } 

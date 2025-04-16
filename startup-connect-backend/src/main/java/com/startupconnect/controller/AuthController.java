@@ -66,10 +66,14 @@ public class AuthController {
             } else if (user.getRole() == UserRole.INVESTOR) {
                 InvestorProfile investorProfile = new InvestorProfile();
                 investorProfile.setUser(registeredUser);
-                investorProfile.setInvestorName((String) registrationData.get("investorName"));
-                investorProfile.setDescription((String) registrationData.get("investorDescription"));
+                investorProfile.setCompanyName((String) registrationData.get("companyName"));
+                investorProfile.setSector((String) registrationData.get("sector"));
+                investorProfile.setInvestmentRangeMin(Double.parseDouble(registrationData.get("investmentRangeMin").toString()));
+                investorProfile.setInvestmentRangeMax(Double.parseDouble(registrationData.get("investmentRangeMax").toString()));
+                investorProfile.setLocation((String) registrationData.get("location"));
                 investorProfile.setInvestmentFocus((String) registrationData.get("investmentFocus"));
-                investorProfile.setMinimumInvestment(Double.parseDouble(registrationData.get("minimumInvestment").toString()));
+                investorProfile.setDescription((String) registrationData.get("description"));
+                investorProfile.setActiveInvestmentsCount(0);
                 userService.saveInvestorProfile(investorProfile);
                 
                 // Update user with profile

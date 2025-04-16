@@ -2,41 +2,44 @@ package com.startupconnect.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
 @Entity
 @Table(name = "investments")
+@Data
 public class Investment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "startup_id")
-    private Startup startup;
-
-    @ManyToOne
-    @JoinColumn(name = "investor_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "investor_id", nullable = false)
     private InvestorProfile investor;
 
-    private Double amount;
-    private String stage;
-    private LocalDateTime investmentDate;
-    private String status;
-    private String description;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "offer_id", nullable = false)
+    private InvestmentOffer offer;
 
+    @Column(nullable = false)
+    private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private InvestmentStatus status;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public enum InvestmentStatus {
+        PENDING,
+        APPROVED,
+        REJECTED,
+        COMPLETED
     }
 } 

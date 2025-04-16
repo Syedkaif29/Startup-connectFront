@@ -10,52 +10,68 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/investor-profile")
+@RequestMapping("/api/investor")
 @CrossOrigin(origins = "http://localhost:3000")
 public class InvestorProfileController {
 
     @Autowired
     private UserService userService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<?> getInvestorProfile(@PathVariable Long userId) {
+    @GetMapping("/profile")
+    public ResponseEntity<?> getInvestorProfile() {
         try {
-            // Get current user
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             User currentUser = userService.findByEmail(authentication.getName());
-
-            // Check if user is requesting their own profile
-            if (currentUser.getId().equals(userId)) {
-                InvestorProfile profile = userService.getInvestorProfileByUserId(userId);
-                return ResponseEntity.ok(profile);
-            } else {
-                return ResponseEntity.badRequest().body("You can only access your own profile");
-            }
+            InvestorProfile profile = userService.getInvestorProfileByUserId(currentUser.getId());
+            return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PutMapping("/{userId}")
-    public ResponseEntity<?> updateInvestorProfile(@PathVariable Long userId, @RequestBody InvestorProfile profile) {
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateInvestorProfile(@RequestBody InvestorProfile profile) {
         try {
-            // Get current user
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             User currentUser = userService.findByEmail(authentication.getName());
-
-            // Check if user is updating their own profile
-            if (currentUser.getId().equals(userId)) {
-                InvestorProfile existingProfile = userService.getInvestorProfileByUserId(userId);
-                existingProfile.setInvestorName(profile.getInvestorName());
-                existingProfile.setDescription(profile.getDescription());
-                existingProfile.setInvestmentFocus(profile.getInvestmentFocus());
-                existingProfile.setMinimumInvestment(profile.getMinimumInvestment());
-                
-                InvestorProfile updatedProfile = userService.saveInvestorProfile(existingProfile);
-                return ResponseEntity.ok(updatedProfile);
-            } else {
-                return ResponseEntity.badRequest().body("You can only update your own profile");
+            
+            // Validate investment range if provided
+            if (profile.getInvestmentRangeMin() != null && profile.getInvestmentRangeMax() != null) {
+                if (profile.getInvestmentRangeMin() > profile.getInvestmentRangeMax()) {
+                    return ResponseEntity.badRequest().body("Minimum investment range cannot be greater than maximum");
+                }
+                if (profile.getInvestmentRangeMin() < 0 || profile.getInvestmentRangeMax() < 0) {
+                    return ResponseEntity.badRequest().body("Investment range values cannot be negative");
+                }
             }
+
+            InvestorProfile existingProfile = userService.getInvestorProfileByUserId(currentUser.getId());
+            
+            // Update only the provided fields
+            if (profile.getCompanyName() != null) {
+                existingProfile.setCompanyName(profile.getCompanyName());
+            }
+            if (profile.getSector() != null) {
+                existingProfile.setSector(profile.getSector());
+            }
+            if (profile.getInvestmentRangeMin() != null) {
+                existingProfile.setInvestmentRangeMin(profile.getInvestmentRangeMin());
+            }
+            if (profile.getInvestmentRangeMax() != null) {
+                existingProfile.setInvestmentRangeMax(profile.getInvestmentRangeMax());
+            }
+            if (profile.getLocation() != null) {
+                existingProfile.setLocation(profile.getLocation());
+            }
+            if (profile.getInvestmentFocus() != null) {
+                existingProfile.setInvestmentFocus(profile.getInvestmentFocus());
+            }
+            if (profile.getDescription() != null) {
+                existingProfile.setDescription(profile.getDescription());
+            }
+            
+            InvestorProfile updatedProfile = userService.saveInvestorProfile(existingProfile);
+            return ResponseEntity.ok(updatedProfile);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
