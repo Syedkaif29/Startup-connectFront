@@ -1,43 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   Container,
   Grid,
   Card,
   CardContent,
   Typography,
-  Button,
   Box,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  InputAdornment
+  Link,
+  Divider,
+  Tooltip
 } from '@mui/material';
 import {
   Business,
-  AttachMoney,
-  TrendingUp,
-  Description
+  Description,
+  People,
+  AttachMoney
 } from '@mui/icons-material';
 import startupService from '../services/startupService';
-import investorService from '../services/investorService';
 import authService from '../services/authService';
+import pitchDeckService from '../services/pitchDeckService';
+import PitchDeckList from '../components/PitchDeckList';
+import InvestmentOfferList from '../components/InvestmentOfferList';
+
+import PitchDeckViewer from '../components/PitchDeckViewer';
 
 const StartupProfile = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [startup, setStartup] = useState(null);
+  const [pitchDecks, setPitchDecks] = useState([]);
   const [investmentOffers, setInvestmentOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedOffer, setSelectedOffer] = useState(null);
-  const [investDialogOpen, setInvestDialogOpen] = useState(false);
-  const [investmentAmount, setInvestmentAmount] = useState('');
   const [isInvestor, setIsInvestor] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedDeck, setSelectedDeck] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,13 +44,27 @@ const StartupProfile = () => {
         setLoading(true);
         setError('');
 
-        // Check if user is an investor
         const user = authService.getCurrentUser();
-        setIsInvestor(user?.role === 'INVESTOR');
+        console.log('Current user:', user);
+        const role = user?.user?.role;
+        console.log('user.role:', role);
+        const investorCheck = role && role.toLowerCase() === 'investor';
+        console.log('isInvestor:', investorCheck);
+        setIsInvestor(investorCheck);
 
         // Fetch startup details
         const startupData = await startupService.getStartupById(id);
         setStartup(startupData);
+
+        // Fetch public pitch decks for this startup
+        if (startupData?.id) {
+          try {
+            const decks = await pitchDeckService.getPublicPitchDecksByStartup(startupData.id);
+            setPitchDecks(decks);
+          } catch {
+            setPitchDecks([]);
+          }
+        }
 
         // Fetch investment offers
         const offers = await startupService.getInvestmentOffers(id);
@@ -65,37 +78,6 @@ const StartupProfile = () => {
 
     fetchData();
   }, [id]);
-
-  const handleInvest = (offer) => {
-    setSelectedOffer(offer);
-    setInvestmentAmount('');
-    setInvestDialogOpen(true);
-  };
-
-  const handleInvestSubmit = async () => {
-    try {
-      if (!investmentAmount || isNaN(investmentAmount) || Number(investmentAmount) <= 0) {
-        throw new Error('Please enter a valid investment amount');
-      }
-
-      const amount = Number(investmentAmount);
-      if (amount > selectedOffer.amount) {
-        throw new Error('Investment amount cannot exceed the offer amount');
-      }
-
-      await investorService.invest({
-        startupId: id,
-        offerId: selectedOffer.id,
-        amount
-      });
-
-      setInvestDialogOpen(false);
-      // Refresh the page to show updated data
-      window.location.reload();
-    } catch (err) {
-      setError(err.message || 'Failed to process investment');
-    }
-  };
 
   if (loading) {
     return (
@@ -126,105 +108,230 @@ const StartupProfile = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        {/* Startup Information */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <Business sx={{ mr: 1 }} />
-                <Typography variant="h4">{startup.startupName}</Typography>
-              </Box>
-              <Typography variant="body1" paragraph>
-                {startup.description}
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1" color="textSecondary">
-                    Industry: {startup.industry}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1" color="textSecondary">
-                    Funding Stage: {startup.fundingStage}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Investment Offers */}
-        <Grid item xs={12}>
-          <Typography variant="h5" gutterBottom>
-            Investment Offers
+    <Container maxWidth="md" sx={{ mt: 6, mb: 6 }}>
+      {/* Company Name Card */}
+      <Card elevation={4} sx={{
+        mb: 5,
+        p: 3,
+        borderRadius: 3,
+        background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+        color: 'primary.contrastText',
+        boxShadow: 8,
+        transition: 'transform 0.2s',
+        '&:hover': {
+          transform: 'scale(1.02)',
+          boxShadow: 16,
+        },
+      }}>
+        <CardContent>
+          <Typography
+            variant="h2"
+            component="h1"
+            align="center"
+            sx={{
+              fontWeight: 700,
+              letterSpacing: 2,
+              fontFamily: 'Montserrat, Roboto, Arial',
+              mb: 1,
+              transition: 'color 0.3s',
+              cursor: 'pointer',
+              '&:hover': {
+                color: '#ffd600',
+                textShadow: '0 4px 24px #fff',
+              },
+            }}
+          >
+            {startup.startupName || 'Startup'}
           </Typography>
-          <Grid container spacing={3}>
-            {investmentOffers.map((offer) => (
-              <Grid item xs={12} sm={6} md={4} key={offer.id}>
-                <Card>
-                  <CardContent>
-                    <Box display="flex" alignItems="center" mb={2}>
-                      <AttachMoney sx={{ mr: 1 }} />
-                      <Typography variant="h6">
-                        ${offer.amount.toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-                      Equity Offered: {offer.equity}%
-                    </Typography>
-                    <Typography variant="body2" paragraph>
-                      {offer.description}
-                    </Typography>
-                    {isInvestor && (
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        onClick={() => handleInvest(offer)}
-                      >
-                        Invest
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+          <Typography
+            variant="subtitle1"
+            align="center"
+            sx={{ opacity: 0.9 }}
+          >
+            Full Startup Profile
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {/* Info Grid */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Tooltip title="The industry this startup operates in" arrow>
+            <Card sx={{
+              borderRadius: 2,
+              boxShadow: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s, border 0.2s',
+              border: '2px solid transparent',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'scale(1.06)',
+                boxShadow: 8,
+                border: '2px solid #1976d2',
+              },
+            }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <Business fontSize="large" color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="h6">Industry</Typography>
+                </Box>
+                <Typography variant="body1" color="text.secondary">
+                  {startup.industry || 'Not specified'}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Tooltip>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Tooltip title="Current funding stage of the startup" arrow>
+            <Card sx={{
+              borderRadius: 2,
+              boxShadow: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s, border 0.2s',
+              border: '2px solid transparent',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'scale(1.06)',
+                boxShadow: 8,
+                border: '2px solid #43a047',
+              },
+            }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <AttachMoney fontSize="large" color="success" sx={{ mr: 1 }} />
+                  <Typography variant="h6">Funding Stage</Typography>
+                </Box>
+                <Typography variant="body1" color="text.secondary">
+                  {startup.fundingStage || 'Not specified'}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Tooltip>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Tooltip title="Number of people in the team" arrow>
+            <Card sx={{
+              borderRadius: 2,
+              boxShadow: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s, border 0.2s',
+              border: '2px solid transparent',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'scale(1.06)',
+                boxShadow: 8,
+                border: '2px solid #0288d1',
+              },
+            }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <People fontSize="large" color="info" sx={{ mr: 1 }} />
+                  <Typography variant="h6">Team Size</Typography>
+                </Box>
+                <Typography variant="body1" color="text.secondary">
+                  {startup.teamSize || 'Not specified'}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Tooltip>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Tooltip title="Startup's official website" arrow>
+            <Card sx={{
+              borderRadius: 2,
+              boxShadow: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s, border 0.2s',
+              border: '2px solid transparent',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'scale(1.06)',
+                boxShadow: 8,
+                border: '2px solid #ffa000',
+              },
+            }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <Description fontSize="large" color="warning" sx={{ mr: 1 }} />
+                  <Typography variant="h6">Website</Typography>
+                </Box>
+                <Typography variant="body1" color="text.secondary">
+                  {startup.website ? (
+                    <Link href={startup.website} target="_blank" rel="noopener noreferrer">
+                      {startup.website}
+                    </Link>
+                  ) : (
+                    'No website provided'
+                  )}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Tooltip>
         </Grid>
       </Grid>
 
-      {/* Investment Dialog */}
-      <Dialog open={investDialogOpen} onClose={() => setInvestDialogOpen(false)}>
-        <DialogTitle>Make Investment</DialogTitle>
-        <DialogContent>
-          <Typography variant="subtitle1" gutterBottom>
-            Investment Offer: ${selectedOffer?.amount.toLocaleString()}
+      {/* Divider */}
+      <Box sx={{ my: 4 }}>
+        <Divider />
+      </Box>
+
+      {/* Description Section */}
+      <Card elevation={2} sx={{ mb: 5, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+            Description
           </Typography>
-          <Typography variant="body2" color="textSecondary" paragraph>
-            Equity Offered: {selectedOffer?.equity}%
+          <Typography variant="body1" paragraph>
+            {startup.description || 'No description provided'}
           </Typography>
-          <TextField
-            fullWidth
-            label="Investment Amount"
-            type="number"
-            value={investmentAmount}
-            onChange={(e) => setInvestmentAmount(e.target.value)}
-            InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>
-            }}
-            sx={{ mt: 2 }}
+        </CardContent>
+      </Card>
+
+      {/* Pitch Decks Section */}
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+          Pitch Decks
+        </Typography>
+        <PitchDeckList pitchDecks={pitchDecks} onPreview={async (deck) => {
+          setSelectedDeck(deck);
+          if (deck.fileType === 'application/pdf') {
+            try {
+              const url = await pitchDeckService.previewPublicPitchDeck(deck.id);
+              setSelectedDeck({ ...deck, fileUrl: url });
+            } catch (err) {
+              setSelectedDeck({ ...deck, fileUrl: '' });
+            }
+          } else {
+            setSelectedDeck(deck);
+          }
+          setViewerOpen(true);
+        }} />
+        <PitchDeckViewer
+          open={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          url={selectedDeck && selectedDeck.fileType === 'application/pdf' ? selectedDeck.fileUrl : ''}
+          fileType={selectedDeck ? selectedDeck.fileType : ''}
+        />
+      </Box>
+
+      {/* Divider */}
+      <Box sx={{ my: 4 }}>
+        <Divider />
+      </Box>
+
+      {/* Investment Offers Section */}
+      <Card elevation={2} sx={{ mb: 5, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+            Investment Offers
+          </Typography>
+          <InvestmentOfferList
+            offers={investmentOffers}
+            isInvestor={isInvestor}
+            onAccept={offer => alert(`Accepted offer for $${offer.amount} / ${offer.equityPercentage}% equity`)}
+            onNegotiate={offer => alert(`Negotiate offer for $${offer.amount} / ${offer.equityPercentage}% equity`)}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setInvestDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleInvestSubmit} variant="contained">
-            Invest
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </CardContent>
+      </Card>
     </Container>
   );
 };
 
-export default StartupProfile; 
+export default StartupProfile;

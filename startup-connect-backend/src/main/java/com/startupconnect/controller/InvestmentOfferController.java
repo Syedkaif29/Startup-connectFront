@@ -107,7 +107,9 @@ public class InvestmentOfferController {
         }
     }
 
+    // Public endpoint to fetch investment offers for a startup
     @GetMapping
+    @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     public ResponseEntity<?> getOffers(@PathVariable Long startupId) {
         try {
             List<InvestmentOffer> offers = investmentOfferService.getOffersByStartup(startupId);

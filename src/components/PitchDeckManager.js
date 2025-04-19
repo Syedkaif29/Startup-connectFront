@@ -307,15 +307,7 @@ const PitchDeckManager = ({ startupId, onUpdate }) => {
                                         {pitchDeck.title}
                                     </Typography>
                                     <Box>
-                                        <IconButton
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                openEditDialogWithPitchDeck(pitchDeck);
-                                            }}
-                                        >
-                                            <EditIcon />
-                                        </IconButton>
+                                        
                                         <IconButton
                                             size="small"
                                             onClick={(e) => {
@@ -325,15 +317,7 @@ const PitchDeckManager = ({ startupId, onUpdate }) => {
                                         >
                                             <DownloadIcon />
                                         </IconButton>
-                                        <IconButton
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(pitchDeck.id);
-                                            }}
-                                        >
-                                            <DeleteIcon />
-                                        </IconButton>
+                                        
                                     </Box>
                                 </Box>
                                 {pitchDeck.description && (

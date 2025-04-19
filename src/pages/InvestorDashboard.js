@@ -17,6 +17,11 @@ import {
   Divider,
   Chip,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
 import {
   MonetizationOn,
@@ -37,10 +42,23 @@ import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
 import investorService from '../services/investorService';
 import { useNavigate } from 'react-router-dom';
 import EditProfileDialog from '../components/investor/EditProfileDialog';
+import MessageDialog from '../components/common/MessageDialog';
+import authService from '../services/authService';
+import messageService from '../services/messageService';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const InvestorDashboard = () => {
+  const [startDialogOpen, setStartDialogOpen] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [receiverId, setReceiverId] = useState('');
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverError, setReceiverError] = useState('');
+  const [receiverLookupLoading, setReceiverLookupLoading] = useState(false);
+  const [conversationUsers, setConversationUsers] = useState([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const currentUser = authService.getCurrentUser();
+  const senderId = currentUser?.user?.id || currentUser?.id || '';
   const [investorProfile, setInvestorProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -156,9 +174,31 @@ const InvestorDashboard = () => {
                   <Edit />
                 </IconButton>
               </Box>
-              <Typography variant="h4" component="h1" gutterBottom>
-                Welcome, {investorProfile?.investorName || 'Investor'}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="h4" component="h1" gutterBottom>
+                  Welcome, {investorProfile?.investorName || 'Investor'}
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  sx={{ ml: 2 }}
+                  onClick={async () => {
+                    setConversationLoading(true);
+                    try {
+                      const users = await messageService.getConversationUsers(senderId);
+                      setConversationUsers(users);
+                      setStartDialogOpen(true);
+                    } catch (err) {
+                      setConversationUsers([]);
+                      // Optionally show error
+                    } finally {
+                      setConversationLoading(false);
+                    }
+                  }}
+                >
+                  Messages
+                </Button>
+              </Box>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle1" color="textSecondary">
@@ -358,7 +398,92 @@ const InvestorDashboard = () => {
           initialData={investorProfile}
         />
       </Container>
-    </Box>
+    {/* Message Dialog for Investor */}
+    <MessageDialog
+      open={messageDialogOpen}
+      onClose={() => setMessageDialogOpen(false)}
+      senderId={senderId}
+      receiverId={receiverId}
+      receiverName={receiverName}
+    />
+    {/* Start Conversation Dialog and Conversation List */}
+    <Dialog open={startDialogOpen} onClose={() => setStartDialogOpen(false)} maxWidth="xs" fullWidth>
+      <DialogTitle>Messages</DialogTitle>
+      <DialogContent>
+        {conversationLoading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="100px">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {conversationUsers.length > 0 && (
+              <Box mb={2}>
+                <Typography variant="subtitle2" color="text.secondary">Recent Conversations:</Typography>
+                <List>
+                  {conversationUsers.map(user => (
+                    <ListItem button key={user.id} onClick={() => {
+                      setReceiverId(user.id);
+                      setReceiverName(user.fullName || user.email);
+                      setStartDialogOpen(false);
+                      setMessageDialogOpen(true);
+                    }}>
+                      <ListItemText primary={user.fullName || user.email} secondary={user.email} />
+                    </ListItem>
+                  ))}
+                </List>
+                <Divider sx={{ my: 2 }} />
+              </Box>
+            )}
+            <Typography variant="subtitle2" color="text.secondary">Start New Conversation:</Typography>
+            <TextField
+              label="Receiver User ID or Email"
+              value={receiverId}
+              onChange={e => setReceiverId(e.target.value)}
+              fullWidth
+              margin="normal"
+              error={!!receiverError}
+              helperText={receiverError}
+            />
+            <TextField
+              label="Receiver Name (optional)"
+              value={receiverName}
+              onChange={e => setReceiverName(e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setStartDialogOpen(false)}>Cancel</Button>
+        <Button
+          onClick={async () => {
+            setReceiverError('');
+            setReceiverLookupLoading(true);
+            try {
+              const user = await require('../services/userService').default.getUserByEmail(receiverId);
+              if (user && user.id) {
+                setReceiverId(user.id);
+                setReceiverName(user.fullName || user.email);
+                setStartDialogOpen(false);
+                setMessageDialogOpen(true);
+              } else {
+                setReceiverError('User not found');
+              }
+            } catch (err) {
+              setReceiverError(typeof err === 'string' ? err : (err.error || 'User not found'));
+            } finally {
+              setReceiverLookupLoading(false);
+            }
+          }}
+          variant="contained"
+          disabled={!receiverId || receiverLookupLoading}
+        >
+          {receiverLookupLoading ? 'Checking...' : 'Chat'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  </Box>
   );
 };
 

@@ -42,7 +42,13 @@ const InvestmentOfferManager = ({ startupId }) => {
   const fetchOffers = async () => {
     try {
       setLoading(true);
-      const data = await startupService.getMyInvestmentOffers();
+      let data = [];
+      if (startupId) {
+        data = await startupService.getInvestmentOffers(startupId);
+      } else {
+        // fallback: try to get own offers if startupId is not provided
+        data = await startupService.getMyInvestmentOffers();
+      }
       setOffers(data);
     } catch (error) {
       console.error('Error fetching offers:', error);
@@ -51,6 +57,7 @@ const InvestmentOfferManager = ({ startupId }) => {
       setLoading(false);
     }
   };
+
 
   const handleOpenDialog = (offer = null) => {
     if (offer) {
@@ -161,14 +168,7 @@ const InvestmentOfferManager = ({ startupId }) => {
                     <Typography variant="h6" gutterBottom>
                       {formatCurrency(offer.amount)}
                     </Typography>
-                    <Box>
-                      <IconButton size="small" onClick={() => handleOpenDialog(offer)} disabled={loading}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleDelete(offer.id)} disabled={loading}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
+                    
                   </Box>
                   <Typography color="textSecondary" gutterBottom>
                     {offer.equityPercentage}% Equity

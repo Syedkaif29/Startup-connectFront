@@ -180,7 +180,7 @@ const Startups = () => {
                     color="primary"
                     onClick={() => handleStartupClick(startup.id)}
                   >
-                    Learn More
+                    View Full Profile
                   </Button>
                 </CardActions>
               </Card>

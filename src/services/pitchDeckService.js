@@ -54,7 +54,7 @@ const pitchDeckService = {
 
     getPublicPitchDecksByStartup: async (startupId) => {
         try {
-            const response = await axios.get(`${API_URL}/pitchdecks/public/startup/${startupId}`);
+            const response = await axios.get(`${API_URL}/pitchdecks/startup/${startupId}/public`);
             return response.data;
         } catch (error) {
             console.error('Error fetching public pitch decks:', error);
@@ -176,6 +176,19 @@ const pitchDeckService = {
         } catch (error) {
             console.error('Error previewing pitch deck:', error);
             throw new Error(error.response?.data?.message || 'Failed to preview pitch deck');
+        }
+    },
+
+    previewPublicPitchDeck: async (id) => {
+        try {
+            const response = await axios.get(`${API_URL}/pitchdecks/public/${id}/file`, {
+                responseType: 'blob'
+            });
+            const blob = new Blob([response.data], { type: response.headers['content-type'] });
+            return window.URL.createObjectURL(blob);
+        } catch (error) {
+            console.error('Error previewing public pitch deck:', error);
+            throw new Error(error.response?.data?.message || 'Failed to preview public pitch deck');
         }
     }
 };

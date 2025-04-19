@@ -177,12 +177,13 @@ const startupService = {
     getInvestmentOffers: async (startupId) => {
         try {
             const user = authService.getCurrentUser();
-            const response = await axios.get(`${API_URL}/startups/${startupId}/investment-offers`, {
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (user?.token) {
+                headers['Authorization'] = `Bearer ${user.token}`;
+            }
+            const response = await axios.get(`${API_URL}/startups/${startupId}/offers`, { headers });
             return response.data;
         } catch (error) {
             console.error('Error fetching investment offers:', error);

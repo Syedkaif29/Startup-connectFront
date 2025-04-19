@@ -158,6 +158,30 @@ public class PitchDeckController {
         }
     }
 
+    @GetMapping("/public/{id}/file")
+    public ResponseEntity<Resource> getPublicPitchDeckFile(@PathVariable Long id) {
+        PitchDeck pitchDeck = pitchDeckService.getPitchDeckById(id);
+        if (pitchDeck == null || !Boolean.TRUE.equals(pitchDeck.getIsPublic())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        try {
+            Path filePath = Paths.get(pitchDeck.getFilePath());
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                MediaType mediaType = MediaType.parseMediaType(pitchDeck.getFileType());
+                boolean isPdf = "application/pdf".equals(pitchDeck.getFileType());
+                return ResponseEntity.ok()
+                    .contentType(mediaType)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, (isPdf ? "inline" : "attachment") + "; filename=\"" + pitchDeck.getFileName() + "\"")
+                    .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @GetMapping("/preview/{id}")
     public ResponseEntity<Resource> previewPitchDeck(@PathVariable Long id) {
         try {

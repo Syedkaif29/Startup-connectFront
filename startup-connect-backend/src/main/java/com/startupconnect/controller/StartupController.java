@@ -1,6 +1,7 @@
 package com.startupconnect.controller;
 
 import com.startupconnect.model.StartupProfile;
+import com.startupconnect.dto.StartupDto;
 import com.startupconnect.model.User;
 import com.startupconnect.service.StartupService;
 import com.startupconnect.service.UserService;
@@ -31,12 +32,26 @@ public class StartupController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<StartupProfile> getStartupById(@PathVariable Long id) {
+    public ResponseEntity<?> getStartupById(@PathVariable Long id) {
         StartupProfile startup = startupService.getStartupById(id);
-        if (startup != null) {
-            return ResponseEntity.ok(startup);
+        if (startup == null) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
+        // Map entity to DTO (manual mapping)
+        StartupDto dto = new StartupDto();
+        dto.setId(startup.getId());
+        dto.setStartupName(startup.getStartupName());
+        dto.setIndustry(startup.getIndustry());
+        dto.setDescription(startup.getDescription());
+        dto.setFundingStage(startup.getFundingStage());
+        dto.setWebsite(startup.getWebsite());
+        // Handle teamSize as Integer if possible
+        try {
+            dto.setTeamSize(startup.getTeamSize() != null ? Integer.parseInt(startup.getTeamSize()) : null);
+        } catch (NumberFormatException e) {
+            dto.setTeamSize(null);
+        }
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/profile")

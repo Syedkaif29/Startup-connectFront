@@ -23,8 +23,7 @@ import {
   People,
   AttachMoney,
   Edit,
-  TrendingUp,
-  Upload,
+
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
@@ -32,6 +31,9 @@ import startupService from '../services/startupService';
 import authService from '../services/authService';
 import PitchDeckManager from '../components/PitchDeckManager';
 import InvestmentOfferManager from '../components/InvestmentOfferManager';
+import MessageDialog from '../components/common/MessageDialog';
+import { List, ListItem, ListItemText, Divider } from '@mui/material';
+import messageService from '../services/messageService';
 
 // Move styled components outside the component
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -61,6 +63,16 @@ const IconWrapper = styled(Box)(({ theme }) => ({
 }));
 
 const StartupDashboard = () => {
+  const [startDialogOpen, setStartDialogOpen] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [receiverId, setReceiverId] = useState('');
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverError, setReceiverError] = useState('');
+  const [receiverLookupLoading, setReceiverLookupLoading] = useState(false);
+  const [conversationUsers, setConversationUsers] = useState([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const currentUser = authService.getCurrentUser();
+  const senderId = currentUser?.user?.id || currentUser?.id || '';
   const [startupProfile, setStartupProfile] = useState(null);
   const [pitchDecks, setPitchDecks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,41 +89,42 @@ const StartupDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchStartupData();
-  }, []);
-
-  const fetchStartupData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      
-      const user = authService.getCurrentUser();
-      if (!user || !user.token) {
-        setError('You must be logged in to view this page');
-        setTimeout(() => navigate('/login'), 2000);
-        return;
+    const fetchStartupData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        const user = authService.getCurrentUser();
+        if (!user || !user.token) {
+          setError('You must be logged in to view this page');
+          setTimeout(() => navigate('/login'), 2000);
+          return;
+        }
+        
+        const profile = await startupService.getStartupProfile();
+        setStartupProfile(profile);
+        setEditProfileData({
+          startupName: profile.startupName || '',
+          description: profile.description || '',
+          industry: profile.industry || '',
+          fundingStage: profile.fundingStage || '',
+          teamSize: profile.teamSize || '',
+          website: profile.website || ''
+        });
+        
+        const decks = await startupService.getPitchDecks();
+        setPitchDecks(decks);
+      } catch (err) {
+        console.error('Error fetching startup data:', err);
+        setError(err.message || 'Failed to fetch startup data. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-      
-      const profile = await startupService.getStartupProfile();
-      setStartupProfile(profile);
-      setEditProfileData({
-        startupName: profile.startupName || '',
-        description: profile.description || '',
-        industry: profile.industry || '',
-        fundingStage: profile.fundingStage || '',
-        teamSize: profile.teamSize || '',
-        website: profile.website || ''
-      });
-      
-      const decks = await startupService.getPitchDecks();
-      setPitchDecks(decks);
-    } catch (err) {
-      console.error('Error fetching startup data:', err);
-      setError(err.message || 'Failed to fetch startup data. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    fetchStartupData();
+  }, [navigate]);
+
+  // --- All other handlers (handleEditProfile, handleEditProfileClose, etc.) follow here ---
 
   const handleEditProfile = () => {
     setEditDialogOpen(true);
@@ -130,32 +143,6 @@ const StartupDashboard = () => {
     } catch (err) {
       console.error('Error updating profile:', err);
       setError(err.message || 'Failed to update profile. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePitchDeckUpdate = async (updatedDeck) => {
-    try {
-      setLoading(true);
-      // Check if this is a new deck or an update
-      const existingDeckIndex = pitchDecks.findIndex(deck => deck.id === updatedDeck.id);
-      let updatedDecks;
-      
-      if (existingDeckIndex === -1) {
-        // New deck
-        updatedDecks = [...pitchDecks, updatedDeck];
-      } else {
-        // Update existing deck
-        updatedDecks = pitchDecks.map(deck => 
-          deck.id === updatedDeck.id ? updatedDeck : deck
-        );
-      }
-      
-      setPitchDecks(updatedDecks);
-    } catch (err) {
-      console.error('Error updating pitch deck:', err);
-      setError(err.message || 'Failed to update pitch deck. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -182,9 +169,26 @@ const StartupDashboard = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom>
-          Welcome, {startupProfile?.startupName || 'Startup'}!
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h4" gutterBottom>
+            Welcome, {startupProfile?.startupName || 'Startup'}
+          </Typography>
+          <Button variant="contained" color="primary" sx={{ ml: 2 }} onClick={async () => {
+            setConversationLoading(true);
+            try {
+              const users = await messageService.getConversationUsers(senderId);
+              setConversationUsers(users);
+              setStartDialogOpen(true);
+            } catch (err) {
+              setConversationUsers([]);
+              // Optionally show error
+            } finally {
+              setConversationLoading(false);
+            }
+          }}>
+            Messages
+          </Button>
+        </Box>
         <Typography variant="subtitle1" color="text.secondary" gutterBottom>
           Manage your startup profile and pitch decks
         </Typography>
@@ -384,7 +388,92 @@ const StartupDashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    {/* Message Dialog for Startup */}
+    <MessageDialog
+      open={messageDialogOpen}
+      onClose={() => setMessageDialogOpen(false)}
+      senderId={senderId}
+      receiverId={receiverId}
+      receiverName={receiverName}
+    />
+    {/* Start Conversation Dialog and Conversation List */}
+    <Dialog open={startDialogOpen} onClose={() => setStartDialogOpen(false)} maxWidth="xs" fullWidth>
+      <DialogTitle>Messages</DialogTitle>
+      <DialogContent>
+        {conversationLoading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="100px">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {conversationUsers.length > 0 && (
+              <Box mb={2}>
+                <Typography variant="subtitle2" color="text.secondary">Recent Conversations:</Typography>
+                <List>
+                  {conversationUsers.map(user => (
+                    <ListItem button key={user.id} onClick={() => {
+                      setReceiverId(user.id);
+                      setReceiverName(user.fullName || user.email);
+                      setStartDialogOpen(false);
+                      setMessageDialogOpen(true);
+                    }}>
+                      <ListItemText primary={user.fullName || user.email} secondary={user.email} />
+                    </ListItem>
+                  ))}
+                </List>
+                <Divider sx={{ my: 2 }} />
+              </Box>
+            )}
+            <Typography variant="subtitle2" color="text.secondary">Start New Conversation:</Typography>
+            <TextField
+              label="Receiver User ID or Email"
+              value={receiverId}
+              onChange={e => setReceiverId(e.target.value)}
+              fullWidth
+              margin="normal"
+              error={!!receiverError}
+              helperText={receiverError}
+            />
+            <TextField
+              label="Receiver Name (optional)"
+              value={receiverName}
+              onChange={e => setReceiverName(e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setStartDialogOpen(false)}>Cancel</Button>
+        <Button
+          onClick={async () => {
+            setReceiverError('');
+            setReceiverLookupLoading(true);
+            try {
+              const user = await require('../services/userService').default.getUserByEmail(receiverId);
+              if (user && user.id) {
+                setReceiverId(user.id);
+                setReceiverName(user.fullName || user.email);
+                setStartDialogOpen(false);
+                setMessageDialogOpen(true);
+              } else {
+                setReceiverError('User not found');
+              }
+            } catch (err) {
+              setReceiverError(typeof err === 'string' ? err : (err.error || 'User not found'));
+            } finally {
+              setReceiverLookupLoading(false);
+            }
+          }}
+          variant="contained"
+          disabled={!receiverId || receiverLookupLoading}
+        >
+          {receiverLookupLoading ? 'Checking...' : 'Chat'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  </Container>
   );
 };
 

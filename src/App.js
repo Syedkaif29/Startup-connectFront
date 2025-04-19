@@ -146,6 +146,7 @@ function App() {
                 }
               />
               <Route path="/startups/:id" element={<StartupProfile />} />
+              <Route path="/startup/:id" element={<StartupProfile />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/" element={<Navigate to="/login" />} />
             </Routes>

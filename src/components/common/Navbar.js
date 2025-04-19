@@ -197,7 +197,7 @@ const Navbar = () => {
                     open={Boolean(anchorElUser)}
                     onClose={handleCloseUserMenu}
                   >
-                    <MenuItem component={Link} to={user?.role === 'INVESTOR' ? '/investor-dashboard' : '/startup-dashboard'} onClick={handleCloseUserMenu}>
+                    <MenuItem component={Link} to={user?.user?.role === 'INVESTOR' ? '/investor-dashboard' : '/startup-dashboard'} onClick={handleCloseUserMenu}>
                       <Typography textAlign="center">Dashboard</Typography>
                     </MenuItem>
                     <MenuItem onClick={handleLogout}>
