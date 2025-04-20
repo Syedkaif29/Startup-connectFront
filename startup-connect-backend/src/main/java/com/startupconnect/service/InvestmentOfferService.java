@@ -56,6 +56,18 @@ public class InvestmentOfferService {
         investmentOfferRepository.save(offer);
     }
 
+    public void acceptOffer(Long offerId, String investorEmail) {
+        InvestmentOffer offer = investmentOfferRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Investment offer not found with id: " + offerId));
+        if (offer.getStatus() == InvestmentOffer.OfferStatus.CLOSED) {
+            throw new RuntimeException("Offer is already closed");
+        }
+        offer.setStatus(InvestmentOffer.OfferStatus.CLOSED); // or ACCEPTED if you add that status
+        // Optionally, set acceptedBy if your entity supports it
+        // offer.setAcceptedBy(investorEmail);
+        investmentOfferRepository.save(offer);
+    }
+
     public List<InvestmentOffer> getOffersByStartup(Long startupId) {
         StartupProfile startup = startupProfileRepository.findById(startupId)
                 .orElseThrow(() -> new RuntimeException("Startup not found"));

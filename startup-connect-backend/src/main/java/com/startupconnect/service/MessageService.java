@@ -2,6 +2,9 @@ package com.startupconnect.service;
 
 import com.startupconnect.model.Message;
 import com.startupconnect.repository.MessageRepository;
+import com.startupconnect.service.NotificationService;
+import com.startupconnect.model.Notification;
+import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +18,9 @@ public class MessageService {
     @Autowired
     private com.startupconnect.repository.UserRepository userRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     public Message sendMessage(Long senderId, Long receiverId, String content) {
         System.out.println("[MessageService] sendMessage called with senderId=" + senderId + ", receiverId=" + receiverId + ", content=" + content);
         try {
@@ -25,6 +31,15 @@ public class MessageService {
             msg.setTimestamp(LocalDateTime.now());
             Message saved = messageRepository.save(msg);
             System.out.println("[MessageService] Message saved with id=" + saved.getId());
+            // Create notification for receiver
+            Notification notif = new Notification();
+            notif.setUserId(receiverId);
+            notif.setType("message");
+            notif.setTitle("New Message Received");
+            notif.setStatus("unread");
+            notif.setDescription("You have received a new message from user ID: " + senderId);
+            notif.setDate(LocalDateTime.now());
+            notificationService.createNotification(notif);
             return saved;
         } catch (Exception e) {
             System.err.println("[MessageService] Error saving message: " + e.getMessage());

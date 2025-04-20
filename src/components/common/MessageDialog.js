@@ -48,12 +48,20 @@ const MessageDialog = ({ open, onClose, senderId, receiverId, receiverName }) =>
   }, [senderId, receiverId]);
 
   useEffect(() => {
+    let interval;
     if (open && receiverId) {
       fetchMessages();
-      const interval = setInterval(fetchMessages, 5000);
-      return () => clearInterval(interval);
+      interval = setInterval(fetchMessages, 5000);
     }
-  }, [open, fetchMessages, receiverId]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [open, receiverId, fetchMessages]);
+
+  // Reset newMessage only when dialog closes
+  useEffect(() => {
+    if (!open) setNewMessage('');
+  }, [open]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !receiverId) return;
@@ -87,7 +95,7 @@ const MessageDialog = ({ open, onClose, senderId, receiverId, receiverName }) =>
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Chat with {receiverName || 'User'}</DialogTitle>
       <DialogContent dividers sx={{ minHeight: 300 }}>
-        {loading ? (
+        {loading && messages.length === 0 ? (
           <Box display="flex" justifyContent="center" alignItems="center" height={200}>
             <CircularProgress />
           </Box>

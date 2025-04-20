@@ -25,6 +25,28 @@ const userService = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Lookup user by ID (for chat dialog)
+  getUserById: async (id) => {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user || !user.token) {
+        throw new Error('No authenticated user found');
+      }
+      const response = await axios.get(`${API_URL}/messages/user/${id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${user.token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error looking up user by ID:', error);
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 export default userService;

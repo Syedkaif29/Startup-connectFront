@@ -5,8 +5,10 @@ com\startupconnect\controller\InvestmentOfferController.class
 com\startupconnect\model\InvestorActivity.class
 repository\JpaRepository.class
 com\startupconnect\controller\StartupController.class
+com\startupconnect\controller\NotificationController.class
 com\startupconnect\model\InvestorProfile.class
 com\startupconnect\service\MessageService.class
+com\startupconnect\model\Notification.class
 com\startupconnect\service\PitchDeckService.class
 com\startupconnect\service\AdminService.class
 com\startupconnect\controller\UserController.class
@@ -15,6 +17,7 @@ com\startupconnect\dto\StartupDto.class
 com\startupconnect\config\SecurityConfig.class
 com\startupconnect\StartupConnectApplication.class
 com\startupconnect\repository\InvestmentRepository.class
+com\startupconnect\controller\InvestmentOfferActionController.class
 com\startupconnect\controller\AuthController.class
 com\startupconnect\controller\InvestorProfileController.class
 com\startupconnect\service\InvestmentService.class
@@ -22,6 +25,7 @@ com\startupconnect\model\User.class
 com\startupconnect\service\InvestorDashboardService.class
 com\startupconnect\controller\InvestorDashboardController.class
 com\startupconnect\model\InvestmentOffer$OfferStatus.class
+com\startupconnect\repository\NotificationRepository.class
 com\startupconnect\model\Transaction.class
 com\startupconnect\repository\InvestorProfileRepository.class
 com\startupconnect\service\StartupService.class
@@ -35,8 +39,8 @@ com\startupconnect\service\CustomUserDetailsService.class
 com\startupconnect\model\PitchDeck.class
 com\startupconnect\model\InvestmentOffer.class
 com\startupconnect\repository\InvestorActivityRepository.class
-com\startupconnect\model\Investment$InvestmentStatus.class
 com\startupconnect\controller\AdminController.class
+com\startupconnect\service\NotificationService.class
 com\startupconnect\service\InvestorService.class
 com\startupconnect\controller\MessageController.class
 com\startupconnect\dto\MessageDto.class

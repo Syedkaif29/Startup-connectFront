@@ -22,6 +22,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Badge,
+  Fab,
+  Tooltip,
 } from '@mui/material';
 import {
   MonetizationOn,
@@ -37,9 +40,12 @@ import {
   CalendarToday,
   Email,
   Edit,
+  Add as AddIcon,
+  Mail as MailIcon,
 } from '@mui/icons-material';
-import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import investorService from '../services/investorService';
+import notificationService from '../services/notificationService';
 import { useNavigate } from 'react-router-dom';
 import EditProfileDialog from '../components/investor/EditProfileDialog';
 import MessageDialog from '../components/common/MessageDialog';
@@ -49,12 +55,22 @@ import messageService from '../services/messageService';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const InvestorDashboard = () => {
+
+  // New Conversation dialog state
+  const [newConversationDialogOpen, setNewConversationDialogOpen] = useState(false);
+  const [newReceiverEmail, setNewReceiverEmail] = useState("");
+  const [newReceiverError, setNewReceiverError] = useState("");
+  const [newReceiverLookupLoading, setNewReceiverLookupLoading] = useState(false);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const lastUnreadIdsRef = React.useRef([]);
+
   const [startDialogOpen, setStartDialogOpen] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [receiverId, setReceiverId] = useState('');
-  const [receiverName, setReceiverName] = useState('');
-  const [receiverError, setReceiverError] = useState('');
-  const [receiverLookupLoading, setReceiverLookupLoading] = useState(false);
+  const [receiverName, setReceiverName] = useState(''); // Always set by API, never by user input
+  // const [receiverError, setReceiverError] = useState('');
+  // const [receiverLookupLoading, setReceiverLookupLoading] = useState(false);
   const [conversationUsers, setConversationUsers] = useState([]);
   const [conversationLoading, setConversationLoading] = useState(false);
   const currentUser = authService.getCurrentUser();
@@ -81,7 +97,6 @@ const InvestorDashboard = () => {
 
   useEffect(() => {
     fetchInvestorData();
-    // Mock data for demonstration - replace with actual API calls
     setSectorData([
       { name: 'Healthcare', value: 35 },
       { name: 'Fintech', value: 25 },
@@ -89,13 +104,25 @@ const InvestorDashboard = () => {
       { name: 'AI/ML', value: 15 },
       { name: 'E-commerce', value: 5 },
     ]);
-    setRecentActivities([
-      { type: 'meeting', title: 'Meeting with HealthX', date: '2024-04-15', status: 'upcoming' },
-      { type: 'investment', title: 'Investment in EduPro', date: '2024-04-14', status: 'completed' },
-      { type: 'document', title: 'Term Sheet Review', date: '2024-04-13', status: 'pending' },
-      { type: 'communication', title: 'Follow-up with FinQuick', date: '2024-04-12', status: 'completed' },
-    ]);
-  }, [fetchInvestorData]);
+    const fetchNotifications = async () => {
+      try {
+        const notifications = await notificationService.getNotifications(senderId);
+        setRecentActivities(notifications);
+        // Unread logic
+        const unread = notifications.filter(n => n.unread || n.status === 'unread');
+        setUnreadCount(unread.length);
+        // Remove snackbar logic from here
+        const currentUnreadIds = unread.map(n => n.id);
+        lastUnreadIdsRef.current = currentUnreadIds;
+      } catch (err) {
+        setRecentActivities([]);
+        setUnreadCount(0);
+      }
+    };
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(interval);
+  }, [fetchInvestorData, senderId]);
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -178,26 +205,6 @@ const InvestorDashboard = () => {
                 <Typography variant="h4" component="h1" gutterBottom>
                   Welcome, {investorProfile?.investorName || 'Investor'}
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{ ml: 2 }}
-                  onClick={async () => {
-                    setConversationLoading(true);
-                    try {
-                      const users = await messageService.getConversationUsers(senderId);
-                      setConversationUsers(users);
-                      setStartDialogOpen(true);
-                    } catch (err) {
-                      setConversationUsers([]);
-                      // Optionally show error
-                    } finally {
-                      setConversationLoading(false);
-                    }
-                  }}
-                >
-                  Messages
-                </Button>
               </Box>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
@@ -312,29 +319,94 @@ const InvestorDashboard = () => {
                   <Typography variant="h6">Recent Activity</Typography>
                 </Box>
                 <List>
+                  {console.log('Recent Activities:', recentActivities)}
                   {recentActivities.map((activity, index) => (
                     <React.Fragment key={index}>
-                      <ListItem>
-                        <ListItemIcon>
-                          {getActivityIcon(activity.type)}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={activity.title}
-                          secondary={new Date(activity.date).toLocaleDateString()}
-                        />
-                        <Box sx={{ ml: 2 }}>
-                          {getStatusChip(activity.status)}
-                        </Box>
-                      </ListItem>
+                      {(activity.type === 'communication' && (activity.userId || activity.senderId || activity.receiverId)) ? (
+                        <ListItem
+                          button
+                          sx={{ cursor: 'pointer', bgcolor: 'rgba(255, 23, 68, 0.08)', '&:hover': { bgcolor: 'rgba(255, 23, 68, 0.15)' } }}
+                          onClick={async () => {
+                            const targetUserId = activity.userId || activity.senderId || activity.receiverId;
+                            if (!targetUserId) {
+                              alert('No user information found for this notification.');
+                              return;
+                            }
+                            setReceiverId(targetUserId);
+                            setReceiverName('');
+                            try {
+                              const userObj = await require('../services/userService').default.getUserById(targetUserId);
+                              setReceiverName(userObj.fullName || userObj.email);
+                            } catch {
+                              setReceiverName('User');
+                            }
+                            setMessageDialogOpen(true);
+                            // Find all unread notifications for this conversation/user
+                            const unreadIds = recentActivities
+                              .filter(a =>
+                                (a.userId === targetUserId || a.senderId === targetUserId || a.receiverId === targetUserId) &&
+                                (a.unread || a.status === 'unread')
+                              )
+                              .map(a => a.id);
+                            if (unreadIds.length > 0) {
+                              try {
+                                const { markNotificationsAsRead } = require('../services/notificationService');
+                                await markNotificationsAsRead(unreadIds);
+                                setRecentActivities(prev =>
+                                  prev.map(a => unreadIds.includes(a.id) ? { ...a, status: 'read', unread: false } : a)
+                                );
+                                setUnreadCount(prev => Math.max(0, prev - unreadIds.length));
+                              } catch (e) {}
+                            }
+                          }}
+                        >
+                          <ListItemIcon>
+                            {getActivityIcon(activity.type)}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={(() => {
+                              if (activity.senderName) return activity.senderName;
+                              if (activity.senderEmail) return activity.senderEmail;
+                              if (activity.sender) return activity.sender;
+                              return 'New Message Received';
+                            })()}
+                            secondary={new Date(activity.date).toLocaleDateString()}
+                          />
+                          <Box sx={{ ml: 2 }}>
+                            {getStatusChip(activity.status)}
+                          </Box>
+                        </ListItem>
+                      ) : (
+                        <ListItem disabled sx={{ cursor: 'default' }}>
+                          <ListItemIcon>
+                            {getActivityIcon(activity.type)}
+                            {activity.unread && (
+                              <Box
+                                sx={{
+                                  display: 'inline-block',
+                                  width: 10,
+                                  height: 10,
+                                  backgroundColor: '#ff1744',
+                                  borderRadius: '50%',
+                                  marginLeft: 8
+                                }}
+                                title="Unread"
+                              />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={activity.title}
+                            secondary={new Date(activity.date).toLocaleDateString()}
+                          />
+                          <Box sx={{ ml: 2 }}>
+                            {getStatusChip(activity.status)}
+                          </Box>
+                        </ListItem>
+                      )}
                       {index < recentActivities.length - 1 && <Divider />}
                     </React.Fragment>
                   ))}
                 </List>
-                <Box sx={{ mt: 2, textAlign: 'center' }}>
-                  <Button variant="outlined" color="primary">
-                    View All Activities
-                  </Button>
-                </Box>
               </CardContent>
             </Card>
           </Grid>
@@ -398,6 +470,35 @@ const InvestorDashboard = () => {
           initialData={investorProfile}
         />
       </Container>
+
+      {/* Floating Action Button for Messages */}
+      <Box sx={{ position: 'fixed', bottom: 32, right: 32, zIndex: 1300 }}>
+        {/* New Conversation FAB */}
+        <Box sx={{ mb: 2 }}>
+          <Fab color="secondary" aria-label="start new conversation" onClick={() => setNewConversationDialogOpen(true)} title="Start New Conversation">
+            <AddIcon />
+          </Fab>
+        </Box>
+        {/* Messages FAB */}
+        <Badge color="secondary" badgeContent={unreadCount} invisible={unreadCount === 0}>
+          <Fab color="primary" aria-label="messages" onClick={async () => {
+            setConversationLoading(true);
+            try {
+              const users = await messageService.getConversationUsers(senderId);
+              setConversationUsers(users);
+              setStartDialogOpen(true);
+            } catch (err) {
+              setConversationUsers([]);
+              // Optionally show error
+            } finally {
+              setConversationLoading(false);
+            }
+          }}>
+            <MailIcon />
+          </Fab>
+        </Badge>
+      </Box>
+
     {/* Message Dialog for Investor */}
     <MessageDialog
       open={messageDialogOpen}
@@ -406,6 +507,68 @@ const InvestorDashboard = () => {
       receiverId={receiverId}
       receiverName={receiverName}
     />
+
+    {/* Start New Conversation Dialog */}
+    <Dialog open={newConversationDialogOpen} onClose={() => {
+      setNewConversationDialogOpen(false);
+      setNewReceiverEmail("");
+      setNewReceiverError("");
+    }} maxWidth="xs" fullWidth>
+      <DialogTitle>Start New Conversation:</DialogTitle>
+      <DialogContent>
+        <TextField
+          label="Receiver Email"
+          fullWidth
+          margin="normal"
+          value={newReceiverEmail}
+          onChange={e => {
+            setNewReceiverEmail(e.target.value);
+            setNewReceiverError("");
+          }}
+          error={!!newReceiverError}
+          helperText={newReceiverError || "Enter the receiver's email. The name will be fetched automatically."}
+          disabled={newReceiverLookupLoading}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => {
+          setNewConversationDialogOpen(false);
+          setNewReceiverEmail("");
+          setNewReceiverError("");
+        }} disabled={newReceiverLookupLoading}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={async () => {
+            setNewReceiverLookupLoading(true);
+            setNewReceiverError("");
+            try {
+              const userObj = await require('../services/userService').default.getUserByEmail(newReceiverEmail);
+              if (!userObj || !userObj.id) {
+                setNewReceiverError(`User not found: User not found with email: ${newReceiverEmail}`);
+                setNewReceiverLookupLoading(false);
+                return;
+              }
+              setReceiverId(userObj.id);
+              setReceiverName(userObj.fullName || userObj.email);
+              setNewConversationDialogOpen(false);
+              setNewReceiverEmail("");
+              setNewReceiverError("");
+              setMessageDialogOpen(true);
+            } catch {
+              setNewReceiverError(`User not found: User not found with email: ${newReceiverEmail}`);
+            } finally {
+              setNewReceiverLookupLoading(false);
+            }
+          }}
+          disabled={!newReceiverEmail || newReceiverLookupLoading}
+        >
+          Chat
+        </Button>
+      </DialogActions>
+    </Dialog>
+
     {/* Start Conversation Dialog and Conversation List */}
     <Dialog open={startDialogOpen} onClose={() => setStartDialogOpen(false)} maxWidth="xs" fullWidth>
       <DialogTitle>Messages</DialogTitle>
@@ -421,66 +584,33 @@ const InvestorDashboard = () => {
                 <Typography variant="subtitle2" color="text.secondary">Recent Conversations:</Typography>
                 <List>
                   {conversationUsers.map(user => (
-                    <ListItem button key={user.id} onClick={() => {
+                    <ListItem button key={user.id} onClick={async () => {
                       setReceiverId(user.id);
-                      setReceiverName(user.fullName || user.email);
-                      setStartDialogOpen(false);
-                      setMessageDialogOpen(true);
+                      try {
+                        const userObj = await require('../services/userService').default.getUserByEmail(user.email);
+                        setReceiverName(userObj.fullName || userObj.email);
+                        setStartDialogOpen(false);
+                        setMessageDialogOpen(true);
+                      } catch {
+                        setReceiverName(user.email); // fallback
+                        setStartDialogOpen(false);
+                        setMessageDialogOpen(true);
+                      }
                     }}>
-                      <ListItemText primary={user.fullName || user.email} secondary={user.email} />
+                      <ListItemText
+                        primary={user.fullName || user.email}
+                        secondary={user.email}
+                      />
                     </ListItem>
                   ))}
                 </List>
-                <Divider sx={{ my: 2 }} />
               </Box>
             )}
-            <Typography variant="subtitle2" color="text.secondary">Start New Conversation:</Typography>
-            <TextField
-              label="Receiver User ID or Email"
-              value={receiverId}
-              onChange={e => setReceiverId(e.target.value)}
-              fullWidth
-              margin="normal"
-              error={!!receiverError}
-              helperText={receiverError}
-            />
-            <TextField
-              label="Receiver Name (optional)"
-              value={receiverName}
-              onChange={e => setReceiverName(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
           </>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setStartDialogOpen(false)}>Cancel</Button>
-        <Button
-          onClick={async () => {
-            setReceiverError('');
-            setReceiverLookupLoading(true);
-            try {
-              const user = await require('../services/userService').default.getUserByEmail(receiverId);
-              if (user && user.id) {
-                setReceiverId(user.id);
-                setReceiverName(user.fullName || user.email);
-                setStartDialogOpen(false);
-                setMessageDialogOpen(true);
-              } else {
-                setReceiverError('User not found');
-              }
-            } catch (err) {
-              setReceiverError(typeof err === 'string' ? err : (err.error || 'User not found'));
-            } finally {
-              setReceiverLookupLoading(false);
-            }
-          }}
-          variant="contained"
-          disabled={!receiverId || receiverLookupLoading}
-        >
-          {receiverLookupLoading ? 'Checking...' : 'Chat'}
-        </Button>
       </DialogActions>
     </Dialog>
   </Box>

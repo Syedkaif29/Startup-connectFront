@@ -23,7 +23,10 @@ import {
   People,
   AttachMoney,
   Edit,
-
+  Notifications as NotificationsIcon,
+  Email as EmailIcon,
+  MonetizationOn as MonetizationOnIcon,
+  CalendarToday as CalendarTodayIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
@@ -32,8 +35,9 @@ import authService from '../services/authService';
 import PitchDeckManager from '../components/PitchDeckManager';
 import InvestmentOfferManager from '../components/InvestmentOfferManager';
 import MessageDialog from '../components/common/MessageDialog';
-import { List, ListItem, ListItemText, Divider } from '@mui/material';
+import { List, ListItem, ListItemText, Divider, Badge, Snackbar, ListItemIcon } from '@mui/material';
 import messageService from '../services/messageService';
+import notificationService, { markNotificationsAsRead } from '../services/notificationService';
 
 // Move styled components outside the component
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -63,6 +67,13 @@ const IconWrapper = styled(Box)(({ theme }) => ({
 }));
 
 const StartupDashboard = () => {
+  const lastUnreadIdsRef = React.useRef([]);
+  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState('');
   const [startDialogOpen, setStartDialogOpen] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [receiverId, setReceiverId] = useState('');
@@ -124,6 +135,29 @@ const StartupDashboard = () => {
     fetchStartupData();
   }, [navigate]);
 
+  // Fetch notifications and update unread count
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const notifs = await notificationService.getNotifications(senderId);
+        setNotifications(notifs);
+        const unread = notifs.filter(n => n.status === 'unread');
+        setUnreadCount(unread.length);
+        // Only show snackbar if there's a new unread notification
+        const currentUnreadIds = unread.map(n => n.id);
+        const isNew = currentUnreadIds.some(id => !lastUnreadIdsRef.current.includes(id));
+        if (isNew && unread.length > 0) {
+          setSnackbarMsg('New message received!');
+          setSnackbarOpen(true);
+        }
+        lastUnreadIdsRef.current = currentUnreadIds;
+      } catch {}
+    };
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(interval);
+  }, [senderId]);
+
   // --- All other handlers (handleEditProfile, handleEditProfileClose, etc.) follow here ---
 
   const handleEditProfile = () => {
@@ -173,22 +207,109 @@ const StartupDashboard = () => {
           <Typography variant="h4" gutterBottom>
             Welcome, {startupProfile?.startupName || 'Startup'}
           </Typography>
-          <Button variant="contained" color="primary" sx={{ ml: 2 }} onClick={async () => {
-            setConversationLoading(true);
-            try {
-              const users = await messageService.getConversationUsers(senderId);
-              setConversationUsers(users);
-              setStartDialogOpen(true);
-            } catch (err) {
-              setConversationUsers([]);
-              // Optionally show error
-            } finally {
-              setConversationLoading(false);
-            }
-          }}>
-            Messages
-          </Button>
+          <Box>
+            <Button
+              variant="outlined"
+              color="primary"
+              sx={{ ml: 2 }}
+              onClick={async () => {
+                setNotificationLoading(true);
+                try {
+                  // Mark all unread as read when opening dialog
+                  const unreadIds = notifications.filter(n => n.status === 'unread').map(n => n.id);
+                  if (unreadIds.length > 0) {
+                    await markNotificationsAsRead(unreadIds);
+                  }
+                  const notifs = await notificationService.getNotifications(senderId);
+                  setNotifications(notifs);
+                  setNotificationDialogOpen(true);
+                  setUnreadCount(0);
+                } catch (err) {
+                  setNotifications([]);
+                } finally {
+                  setNotificationLoading(false);
+                }
+              }}
+            >
+              <Badge color="error" variant={unreadCount > 0 ? 'dot' : undefined} badgeContent={unreadCount > 0 ? unreadCount : null}>
+                <NotificationsIcon /> Notifications
+              </Badge>
+            </Button>
+            <Button variant="contained" color="primary" sx={{ ml: 2 }} onClick={async () => {
+              setConversationLoading(true);
+              try {
+                const users = await messageService.getConversationUsers(senderId);
+                setConversationUsers(users);
+                setStartDialogOpen(true);
+              } catch (err) {
+                setConversationUsers([]);
+                // Optionally show error
+              } finally {
+                setConversationLoading(false);
+              }
+            }}>
+              Messages
+            </Button>
+          </Box>
         </Box>
+
+        {/* Notification Dialog */}
+        <Dialog open={notificationDialogOpen} onClose={() => setNotificationDialogOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle>Notifications</DialogTitle>
+          <DialogContent>
+            {notificationLoading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight="100px">
+                <CircularProgress />
+              </Box>
+            ) : notifications.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">No notifications found.</Typography>
+            ) : (
+              <List>
+                {notifications.map((notif, idx) => {
+                  let icon = <NotificationsIcon color="primary" />;
+                  if (notif.type === 'message') icon = <EmailIcon color="info" />;
+                  else if (notif.type === 'investment') icon = <MonetizationOnIcon color="success" />;
+                  else if (notif.type === 'meeting') icon = <CalendarTodayIcon color="secondary" />;
+                  else if (notif.type === 'document') icon = <Description color="warning" />;
+                  return (
+                    <ListItem key={idx} divider button={notif.type === 'message'}
+                      onClick={notif.type === 'message' ? async () => {
+                        setNotificationDialogOpen(false);
+                        const userId = notif.description?.match(/user ID: (\d+)/)?.[1] || '';
+                        setReceiverId(userId);
+                        let name = 'User';
+                        if (userId) {
+                          try {
+                            const user = await require('../services/userService').default.getUserById(userId);
+                            name = user.fullName || user.email || 'User';
+                          } catch {}
+                        }
+                        setReceiverName(name);
+                        setTimeout(() => setMessageDialogOpen(true), 0);
+                      } : undefined}
+                    >
+                      <ListItemIcon>{icon}</ListItemIcon>
+                      <ListItemText
+                        primary={notif.title || notif.type || 'Notification'}
+                        secondary={notif.date ? `${notif.date} - ${notif.status || ''}` : notif.status || ''}
+                      />
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setNotificationDialogOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={4000}
+          onClose={() => setSnackbarOpen(false)}
+          message={snackbarMsg}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        />
         <Typography variant="subtitle1" color="text.secondary" gutterBottom>
           Manage your startup profile and pitch decks
         </Typography>
@@ -226,6 +347,8 @@ const StartupDashboard = () => {
             </StyledCardContent>
           </StyledCard>
         </Grid>
+
+
 
         <Grid item xs={12} sm={6} md={3}>
           <StyledCard>
@@ -301,24 +424,26 @@ const StartupDashboard = () => {
         </Grid>
       </Paper>
 
-      <PitchDeckManager 
-        startupId={startupProfile?.id} 
-        onUpdate={(updatedDecks) => {
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <PitchDeckManager 
+          startupId={startupProfile?.id}
+          onUpdate={(updatedDecks) => {
             if (Array.isArray(updatedDecks)) {
-                setPitchDecks(updatedDecks);
+              setPitchDecks(updatedDecks);
             } else {
-                setPitchDecks(prevDecks => {
-                    const existingIndex = prevDecks.findIndex(d => d.id === updatedDecks.id);
-                    if (existingIndex >= 0) {
-                        const newDecks = [...prevDecks];
-                        newDecks[existingIndex] = updatedDecks;
-                        return newDecks;
-                    }
-                    return [...prevDecks, updatedDecks];
-                });
+              setPitchDecks(prevDecks => {
+                const existingIndex = prevDecks.findIndex(d => d.id === updatedDecks.id);
+                if (existingIndex >= 0) {
+                  const newDecks = [...prevDecks];
+                  newDecks[existingIndex] = updatedDecks;
+                  return newDecks;
+                }
+                return [...prevDecks, updatedDecks];
+              });
             }
-        }}
-      />
+          }}
+        />
+      </Paper>
 
       <Grid item xs={12}>
         <InvestmentOfferManager startupId={startupProfile?.id} />
@@ -434,13 +559,6 @@ const StartupDashboard = () => {
               error={!!receiverError}
               helperText={receiverError}
             />
-            <TextField
-              label="Receiver Name (optional)"
-              value={receiverName}
-              onChange={e => setReceiverName(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
           </>
         )}
       </DialogContent>
@@ -454,11 +572,14 @@ const StartupDashboard = () => {
               const user = await require('../services/userService').default.getUserByEmail(receiverId);
               if (user && user.id) {
                 setReceiverId(user.id);
-                setReceiverName(user.fullName || user.email);
+                setReceiverName(user.email); // Auto-generate name as email
                 setStartDialogOpen(false);
                 setMessageDialogOpen(true);
               } else {
-                setReceiverError('User not found');
+                // If not found, just use entered email as name
+                setReceiverName(receiverId);
+                setStartDialogOpen(false);
+                setMessageDialogOpen(true);
               }
             } catch (err) {
               setReceiverError(typeof err === 'string' ? err : (err.error || 'User not found'));

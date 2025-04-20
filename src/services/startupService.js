@@ -305,7 +305,34 @@ const startupService = {
             }
             throw new Error(error.response?.data?.message || 'Failed to delete investment offer');
         }
-    }
+    },
+    /**
+     * Accept an investment offer (investor action)
+     * @param {string} offerId
+     */
+    acceptInvestmentOffer: async (offerId) => {
+        try {
+            const user = authService.getCurrentUser();
+            if (!user || !user.token) {
+                throw new Error('No authenticated user found');
+            }
+            const response = await axios.post(
+                `${API_URL}/investment-offers/${offerId}/accept`,
+                {},
+                {
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error accepting investment offer:', error);
+            throw new Error(error.response?.data?.message || 'Failed to accept investment offer');
+        }
+    },
+
 };
 
 export default startupService; 

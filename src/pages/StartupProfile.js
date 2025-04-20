@@ -11,7 +11,8 @@ import {
   Alert,
   Link,
   Divider,
-  Tooltip
+  Tooltip,
+  Button
 } from '@mui/material';
 import {
   Business,
@@ -26,10 +27,48 @@ import PitchDeckList from '../components/PitchDeckList';
 import InvestmentOfferList from '../components/InvestmentOfferList';
 
 import PitchDeckViewer from '../components/PitchDeckViewer';
+import MessageDialog from '../components/common/MessageDialog';
+import DummyPaymentDialog from '../components/DummyPaymentDialog';
 
 const StartupProfile = () => {
+  // ...existing state...
+  const [accepting, setAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState('');
+  const [acceptSuccess, setAcceptSuccess] = useState('');
+
+  // Payment modal state
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState(null);
+
+  // Accept offer handler (after payment)
+  const handleAcceptOffer = async (offer) => {
+    setAcceptError('');
+    setAcceptSuccess('');
+    setAccepting(true);
+    try {
+      await startupService.acceptInvestmentOffer(offer.id);
+      setAcceptSuccess('Offer accepted successfully!');
+      // Refresh offers
+      const offers = await startupService.getInvestmentOffers(id);
+      setInvestmentOffers(offers);
+    } catch (err) {
+      setAcceptError(err.message || 'Failed to accept offer.');
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  // Trigger payment modal before accept
+  const handleAcceptWithPayment = (offer) => {
+    setSelectedOffer(offer);
+    setPaymentOpen(true);
+  };
+
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+
   const { id } = useParams();
   const [startup, setStartup] = useState(null);
+  const [receiverId, setReceiverId] = useState(null); // <-- add this state
   const [pitchDecks, setPitchDecks] = useState([]);
   const [investmentOffers, setInvestmentOffers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +85,7 @@ const StartupProfile = () => {
 
         const user = authService.getCurrentUser();
         console.log('Current user:', user);
-        const role = user?.user?.role;
+        const role = user?.role || user?.user?.role;
         console.log('user.role:', role);
         const investorCheck = role && role.toLowerCase() === 'investor';
         console.log('isInvestor:', investorCheck);
@@ -55,6 +94,26 @@ const StartupProfile = () => {
         // Fetch startup details
         const startupData = await startupService.getStartupById(id);
         setStartup(startupData);
+        // Ensure we have the startup's userId for messaging
+        if (startupData?.userId) {
+          setReceiverId(startupData.userId);
+        } else {
+          // Fetch the userId from backend if not present
+          try {
+            const token = authService.getToken();
+            const res = await fetch(`${process.env.REACT_APP_API_URL || ''}/messages/user/${id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+              const user = await res.json();
+              setReceiverId(user.id);
+            } else {
+              setReceiverId(null);
+            }
+          } catch {
+            setReceiverId(null);
+          }
+        }
 
         // Fetch public pitch decks for this startup
         if (startupData?.id) {
@@ -108,22 +167,23 @@ const StartupProfile = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ mt: 6, mb: 6 }}>
-      {/* Company Name Card */}
-      <Card elevation={4} sx={{
-        mb: 5,
-        p: 3,
-        borderRadius: 3,
-        background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
-        color: 'primary.contrastText',
-        boxShadow: 8,
-        transition: 'transform 0.2s',
-        '&:hover': {
-          transform: 'scale(1.02)',
-          boxShadow: 16,
-        },
-      }}>
-        <CardContent>
+    <>
+      <Container maxWidth="md" sx={{ mt: 6, mb: 6 }}>
+        {/* Company Name Card */}
+        <Card elevation={4} sx={{
+          mb: 5,
+          p: 3,
+          borderRadius: 3,
+          background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+          color: 'primary.contrastText',
+          boxShadow: 8,
+          transition: 'transform 0.2s',
+          '&:hover': {
+            transform: 'scale(1.02)',
+            boxShadow: 16,
+          },
+        }}>
+          <CardContent>
           <Typography
             variant="h2"
             component="h1"
@@ -143,6 +203,13 @@ const StartupProfile = () => {
           >
             {startup.startupName || 'Startup'}
           </Typography>
+          {isInvestor && (
+            <Box textAlign="center" mt={2}>
+              <Button variant="contained" color="primary" onClick={() => setMessageDialogOpen(true)}>
+                Message Startup
+              </Button>
+            </Box>
+          )}
           <Typography
             variant="subtitle1"
             align="center"
@@ -285,11 +352,12 @@ const StartupProfile = () => {
       </Card>
 
       {/* Pitch Decks Section */}
-      <Box sx={{ mb: 5 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
-          Pitch Decks
-        </Typography>
-        <PitchDeckList pitchDecks={pitchDecks} onPreview={async (deck) => {
+      <Card elevation={2} sx={{ mb: 5, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+            Pitch Decks
+          </Typography>
+          <PitchDeckList pitchDecks={pitchDecks} onPreview={async (deck) => {
           setSelectedDeck(deck);
           if (deck.fileType === 'application/pdf') {
             try {
@@ -309,7 +377,8 @@ const StartupProfile = () => {
           url={selectedDeck && selectedDeck.fileType === 'application/pdf' ? selectedDeck.fileUrl : ''}
           fileType={selectedDeck ? selectedDeck.fileType : ''}
         />
-      </Box>
+      </CardContent>
+      </Card>
 
       {/* Divider */}
       <Box sx={{ my: 4 }}>
@@ -319,19 +388,44 @@ const StartupProfile = () => {
       {/* Investment Offers Section */}
       <Card elevation={2} sx={{ mb: 5, borderRadius: 3 }}>
         <CardContent>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+           <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
             Investment Offers
           </Typography>
-          <InvestmentOfferList
-            offers={investmentOffers}
-            isInvestor={isInvestor}
-            onAccept={offer => alert(`Accepted offer for $${offer.amount} / ${offer.equityPercentage}% equity`)}
-            onNegotiate={offer => alert(`Negotiate offer for $${offer.amount} / ${offer.equityPercentage}% equity`)}
-          />
+          {accepting && (
+            <Box mb={2}><CircularProgress size={24} /></Box>
+          )}
+          {acceptSuccess && (
+            <Alert severity="success" sx={{ mb: 2 }}>{acceptSuccess}</Alert>
+          )}
+          {acceptError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{acceptError}</Alert>
+          )}
+            <InvestmentOfferList
+              offers={investmentOffers}
+              isInvestor={isInvestor}
+              onAccept={handleAcceptWithPayment}
+              onNegotiate={offer => alert(`Negotiate offer for $${offer.amount} / ${offer.equityPercentage}% equity`)}
+            />
+            <DummyPaymentDialog
+              open={paymentOpen}
+              amount={selectedOffer?.amount}
+              onClose={() => setPaymentOpen(false)}
+              onSuccess={() => {
+                setPaymentOpen(false);
+                if (selectedOffer) handleAcceptOffer(selectedOffer);
+              }}
+            />
         </CardContent>
       </Card>
     </Container>
-  );
+    <MessageDialog
+      open={messageDialogOpen}
+      onClose={() => setMessageDialogOpen(false)}
+      senderId={authService.getCurrentUser()?.user?.id || authService.getCurrentUser()?.id}
+      receiverId={receiverId}
+      receiverName={startup?.startupName}
+    />
+  </>);
 };
 
 export default StartupProfile;

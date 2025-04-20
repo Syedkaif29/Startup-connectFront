@@ -57,28 +57,33 @@ const InvestmentOfferList = ({ offers, isInvestor, onAccept, onNegotiate }) => {
                   Terms: {offer.terms}
                 </Typography>
                 <Chip label={offer.status || 'ACTIVE'} color="success" size="small" sx={{ mt: 1 }} />
-                {isInvestor && (
-                  <Box mt={2} display="flex" gap={1}>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      startIcon={<CheckCircleIcon />}
-                      sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2, boxShadow: 2, textTransform: 'none' }}
-                      onClick={() => onAccept && onAccept(offer)}
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="warning"
-                      startIcon={<HandshakeIcon />}
-                      sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2, boxShadow: 2, textTransform: 'none', color: '#fff' }}
-                      onClick={() => onNegotiate && onNegotiate(offer)}
-                    >
-                      Negotiate
-                    </Button>
-                  </Box>
-                )}
+                {isInvestor && offer.status !== 'CLOSED' && (
+  <Box mt={2} display="flex" gap={1}>
+    <Button
+      variant="contained"
+      color="success"
+      startIcon={<CheckCircleIcon />}
+      sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2, boxShadow: 2, textTransform: 'none' }}
+      onClick={() => onAccept && onAccept(offer)}
+    >
+      Accept
+    </Button>
+    <Button
+      variant="contained"
+      color="warning"
+      startIcon={<HandshakeIcon />}
+      sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2, boxShadow: 2, textTransform: 'none', color: '#fff' }}
+      onClick={() => onNegotiate && onNegotiate(offer)}
+    >
+      Negotiate
+    </Button>
+  </Box>
+)}
+{isInvestor && offer.status === 'CLOSED' && (
+  <Box mt={2}>
+    <Chip label="CLOSED" color="default" size="medium" sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2 }} />
+  </Box>
+)}
                 <Popover
                   id="mouse-over-popover"
                   sx={{ pointerEvents: 'none' }}

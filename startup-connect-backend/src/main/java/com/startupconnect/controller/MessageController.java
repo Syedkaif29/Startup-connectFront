@@ -15,6 +15,9 @@ public class MessageController {
     @Autowired
     private MessageService messageService;
 
+    @Autowired
+    private com.startupconnect.service.UserService userService;
+
     @PostMapping("/send")
     public ResponseEntity<Message> sendMessage(@RequestBody MessageDto dto) {
         Message msg = messageService.sendMessage(dto.getSenderId(), dto.getReceiverId(), dto.getContent());
@@ -39,5 +42,20 @@ public class MessageController {
     public ResponseEntity<List<com.startupconnect.model.User>> getConversationUsers(@RequestParam Long userId) {
         List<com.startupconnect.model.User> users = messageService.getConversationUsers(userId);
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/user/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        try {
+            com.startupconnect.model.User user = userService.getUserById(id);
+            if (user == null) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                        .body(java.util.Collections.singletonMap("error", "User not found"));
+            }
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(java.util.Collections.singletonMap("error", "User not found: " + e.getMessage()));
+        }
     }
 }
