@@ -39,6 +39,9 @@ import { List, ListItem, ListItemText, Divider, Badge, Snackbar, ListItemIcon } 
 import messageService from '../services/messageService';
 import notificationService, { markNotificationsAsRead } from '../services/notificationService';
 
+// Add this import
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+
 // Move styled components outside the component
 const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
@@ -58,6 +61,13 @@ const StyledCardContent = styled(CardContent)(({ theme }) => ({
   textAlign: 'center',
 }));
 
+// QuickAction button style
+const QuickActionBox = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginBottom: theme.spacing(2),
+}));
+
 const IconWrapper = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.primary.main,
   borderRadius: '50%',
@@ -67,6 +77,7 @@ const IconWrapper = styled(Box)(({ theme }) => ({
 }));
 
 const StartupDashboard = () => {
+  const navigate = useNavigate();
   const lastUnreadIdsRef = React.useRef([]);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -97,7 +108,6 @@ const StartupDashboard = () => {
     teamSize: '',
     website: ''
   });
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStartupData = async () => {
@@ -202,6 +212,18 @@ const StartupDashboard = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* QuickAction Button */}
+      <QuickActionBox>
+        <Button
+          variant="contained"
+          color="primary"
+          endIcon={<ArrowForwardIcon />}
+          onClick={() => navigate('/investments-received')}
+          sx={{ fontWeight: 600 }}
+        >
+          View Investments Received
+        </Button>
+      </QuickActionBox>
       <Box sx={{ mt: 4, mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h4" gutterBottom>

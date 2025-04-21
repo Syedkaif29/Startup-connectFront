@@ -112,7 +112,7 @@ public class InvestmentOfferController {
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     public ResponseEntity<?> getOffers(@PathVariable Long startupId) {
         try {
-            List<InvestmentOffer> offers = investmentOfferService.getOffersByStartup(startupId);
+            List<com.startupconnect.dto.InvestmentOfferDTO> offers = investmentOfferService.getOffersByStartup(startupId);
             return ResponseEntity.ok(offers);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

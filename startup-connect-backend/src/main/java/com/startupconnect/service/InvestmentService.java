@@ -19,6 +19,17 @@ import java.util.stream.Collectors;
 public class InvestmentService {
 
     @Autowired
+    private com.startupconnect.service.UserService userService;
+
+    public com.startupconnect.service.UserService getUserService() {
+        return userService;
+    }
+
+    public InvestorProfileRepository getInvestorProfileRepository() {
+        return investorProfileRepository;
+    }
+
+    @Autowired
     private InvestmentRepository investmentRepository;
 
     @Autowired

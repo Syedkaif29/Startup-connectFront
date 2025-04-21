@@ -30,4 +30,14 @@ public class InvestmentController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    @GetMapping("/my")
+    public ResponseEntity<?> getMyInvestments(org.springframework.security.core.Authentication authentication) {
+        String email = authentication.getName();
+        com.startupconnect.model.User user = investmentService.getUserService().findByEmail(email);
+        com.startupconnect.model.InvestorProfile investorProfile = investmentService.getInvestorProfileRepository().findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Investor profile not found for user: " + user.getId()));
+        java.util.List<com.startupconnect.model.Investment> investments = investmentService.getInvestmentsByInvestor(investorProfile.getId());
+        return ResponseEntity.ok(investments);
+    }
 } 

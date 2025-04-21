@@ -1,10 +1,13 @@
 package com.startupconnect.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties({"startupProfile", "investorProfile", "password", "createdAt", "updatedAt"})
 @Entity
 @Data
 @Table(name = "users")

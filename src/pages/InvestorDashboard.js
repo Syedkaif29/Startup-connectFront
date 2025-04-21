@@ -55,6 +55,7 @@ import messageService from '../services/messageService';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const InvestorDashboard = () => {
+  const navigate = useNavigate();
 
   // New Conversation dialog state
   const [newConversationDialogOpen, setNewConversationDialogOpen] = useState(false);
@@ -81,7 +82,6 @@ const InvestorDashboard = () => {
   const [sectorData, setSectorData] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const navigate = useNavigate();
 
   const fetchInvestorData = useCallback(async () => {
     try {
@@ -181,7 +181,12 @@ const InvestorDashboard = () => {
 
   return (
     <Box sx={{ flexGrow: 1, py: 3 }}>
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box display="flex" justifyContent="flex-end" mb={2}>
+          <Button variant="contained" color="primary" onClick={() => navigate('/my-investments')}>
+            View My Investments
+          </Button>
+        </Box>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}

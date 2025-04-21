@@ -1,7 +1,12 @@
 package com.startupconnect.service;
 
+import com.startupconnect.model.User;
+import com.startupconnect.repository.UserRepository;
+
 import com.startupconnect.model.InvestmentOffer;
 import com.startupconnect.model.StartupProfile;
+import com.startupconnect.model.InvestorProfile;
+import com.startupconnect.dto.InvestmentOfferDTO;
 import com.startupconnect.repository.InvestmentOfferRepository;
 import com.startupconnect.repository.StartupProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +23,14 @@ public class InvestmentOfferService {
 
     @Autowired
     private InvestmentOfferRepository investmentOfferRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private StartupProfileRepository startupProfileRepository;
+
+    @Autowired
+    private com.startupconnect.repository.InvestorProfileRepository investorProfileRepository;
 
     @Transactional
     public InvestmentOffer createInvestmentOffer(Long startupId, InvestmentOffer offer) {
@@ -62,16 +72,30 @@ public class InvestmentOfferService {
         if (offer.getStatus() == InvestmentOffer.OfferStatus.CLOSED) {
             throw new RuntimeException("Offer is already closed");
         }
-        offer.setStatus(InvestmentOffer.OfferStatus.CLOSED); // or ACCEPTED if you add that status
-        // Optionally, set acceptedBy if your entity supports it
-        // offer.setAcceptedBy(investorEmail);
+        offer.setStatus(InvestmentOffer.OfferStatus.CLOSED);
+        // Find the investor by email and set it
+        User investor = userRepository.findByEmail(investorEmail)
+                .orElseThrow(() -> new RuntimeException("Investor not found with email: " + investorEmail));
+        offer.setInvestor(investor);
         investmentOfferRepository.save(offer);
     }
 
-    public List<InvestmentOffer> getOffersByStartup(Long startupId) {
+    public List<InvestmentOfferDTO> getOffersByStartup(Long startupId) {
         StartupProfile startup = startupProfileRepository.findById(startupId)
                 .orElseThrow(() -> new RuntimeException("Startup not found"));
-        return investmentOfferRepository.findByStartup(startup);
+        List<InvestmentOffer> offers = investmentOfferRepository.findByStartup(startup);
+        List<InvestmentOfferDTO> dtos = new java.util.ArrayList<>();
+        for (InvestmentOffer offer : offers) {
+            String investorCompanyName = null;
+            if (offer.getInvestor() != null) {
+                InvestorProfile profile = investorProfileRepository.findByUserId(offer.getInvestor().getId()).orElse(null);
+                if (profile != null) {
+                    investorCompanyName = profile.getCompanyName();
+                }
+            }
+            dtos.add(new InvestmentOfferDTO(offer, investorCompanyName));
+        }
+        return dtos;
     }
 
     public List<InvestmentOffer> getActiveOffersByStartup(Long startupId) {

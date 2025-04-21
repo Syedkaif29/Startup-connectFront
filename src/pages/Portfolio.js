@@ -40,6 +40,7 @@ import investorService from '../services/investorService';
 const Portfolio = () => {
     const [portfolio, setPortfolio] = useState(null);
     const [performance, setPerformance] = useState(null);
+    const [investments, setInvestments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedInvestment, setSelectedInvestment] = useState(null);
@@ -53,12 +54,14 @@ const Portfolio = () => {
     const fetchPortfolioData = async () => {
         try {
             setLoading(true);
-            const [portfolioData, performanceData] = await Promise.all([
+            const [portfolioData, performanceData, myInvestments] = await Promise.all([
                 investorService.getPortfolio(),
-                investorService.getPortfolioPerformance()
+                investorService.getPortfolioPerformance(),
+                investorService.getMyInvestments()
             ]);
             setPortfolio(portfolioData);
             setPerformance(performanceData);
+            setInvestments(myInvestments);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -209,37 +212,48 @@ const Portfolio = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {portfolio?.investments?.map((investment) => (
-                                    <TableRow key={investment.id} hover>
-                                        <TableCell>{investment.startupName}</TableCell>
-                                        <TableCell>${investment.amount.toLocaleString()}</TableCell>
-                                        <TableCell>{new Date(investment.date).toLocaleDateString()}</TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={investment.stage}
-                                                color={investment.stage === 'Seed' ? 'primary' : 'secondary'}
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={investment.status}
-                                                color={investment.status === 'Active' ? 'success' : 'default'}
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Tooltip title="View Details">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleInvestmentClick(investment.id)}
-                                                >
-                                                    <InfoIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {investments.length === 0 ? (
+    <TableRow>
+        <TableCell colSpan={5} align="center">
+            No investments found.
+        </TableCell>
+    </TableRow>
+) : (
+    investments.map((investment) => {
+        // Try to get startup name from nested offer/startup
+        const startupName = investment.offer?.startup?.name || investment.offer?.startupProfile?.startupName || '-';
+        // Amount
+        const amount = investment.amount ? `$${Number(investment.amount).toLocaleString()}` : '-';
+        // Date
+        const date = investment.createdAt ? new Date(investment.createdAt).toLocaleDateString() : '-';
+        // Status
+        const status = investment.status || '-';
+        return (
+            <TableRow key={investment.id} hover>
+                <TableCell>{startupName}</TableCell>
+                <TableCell>{amount}</TableCell>
+                <TableCell>{date}</TableCell>
+                <TableCell>
+                    <Chip
+                        label={status}
+                        color={status === 'APPROVED' || status === 'COMPLETED' ? 'success' : status === 'PENDING' ? 'warning' : 'default'}
+                        size="small"
+                    />
+                </TableCell>
+                <TableCell>
+                    <Tooltip title="View Details">
+                        <IconButton
+                            size="small"
+                            onClick={() => handleInvestmentClick(investment.id)}
+                        >
+                            <InfoIcon />
+                        </IconButton>
+                    </Tooltip>
+                </TableCell>
+            </TableRow>
+        );
+    })
+)}
                             </TableBody>
                         </Table>
                     </TableContainer>

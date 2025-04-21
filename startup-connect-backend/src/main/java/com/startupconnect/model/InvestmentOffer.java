@@ -7,6 +7,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "investment_offers")
 public class InvestmentOffer {
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "investor_id")
+    private User investor;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -48,6 +52,9 @@ public class InvestmentOffer {
         CLOSED,
         EXPIRED
     }
+
+    public User getInvestor() { return investor; }
+    public void setInvestor(User investor) { this.investor = investor; }
 
     // Getters and Setters
     public Long getId() {

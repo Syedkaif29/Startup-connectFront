@@ -11,6 +11,7 @@ import { CircularProgress, Box, Alert } from '@mui/material';
 import authService from './services/authService';
 import Portfolio from './pages/Portfolio';
 import StartupProfile from './pages/StartupProfile';
+import InvestorInvestments from "./pages/InvestorInvestments";
 
 // Error boundary component
 const ErrorBoundary = ({ children }) => {
@@ -58,6 +59,7 @@ const InvestorDashboard = lazyLoad(() => import("./pages/InvestorDashboard"));
 const AdminDashboard = lazyLoad(() => import("./pages/AdminDashboard"));
 const Startups = lazyLoad(() => import("./pages/Startups"));
 const Investors = lazyLoad(() => import("./pages/Investors"));
+const InvestmentsReceived = lazyLoad(() => import("./pages/InvestmentsReceived"));
 
 // Loading component
 const LoadingFallback = () => (
@@ -138,6 +140,14 @@ function App() {
                 }
               />
               <Route
+                path="/investments-received"
+                element={
+                  <ProtectedRoute allowedRoles={['STARTUP']}>
+                    <InvestmentsReceived />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/investor-dashboard"
                 element={
                   <ProtectedRoute allowedRoles={['INVESTOR']}>
@@ -145,6 +155,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/my-investments"
+  element={
+    <ProtectedRoute allowedRoles={['INVESTOR']}>
+      <InvestorInvestments />
+    </ProtectedRoute>
+  }
+/>
               <Route path="/startups/:id" element={<StartupProfile />} />
               <Route path="/startup/:id" element={<StartupProfile />} />
               <Route path="/portfolio" element={<Portfolio />} />

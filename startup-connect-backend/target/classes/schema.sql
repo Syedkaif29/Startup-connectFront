@@ -48,6 +48,27 @@ CREATE TABLE startup_profiles (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Create investment_offers table
+CREATE TABLE investment_offers (
+    id SERIAL PRIMARY KEY,
+    investor_id BIGINT,
+    user_id BIGINT NOT NULL,
+    company_name VARCHAR(255) NOT NULL,
+    sector VARCHAR(100) NOT NULL,
+    investment_range_min DECIMAL(15,2) NOT NULL,
+    investment_range_max DECIMAL(15,2) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_size BIGINT,
+    file_type VARCHAR(100),
+    version INTEGER DEFAULT 1,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (investor_id) REFERENCES investor_profiles(id) ON DELETE CASCADE
+);
+
 -- Create pitch_decks table
 CREATE TABLE pitch_decks (
     id SERIAL PRIMARY KEY,
