@@ -23,13 +23,33 @@ const startupService = {
         }
     },
 
-    getStartupById: async (id) => {
+    getStartupById: async (startupId) => {
         try {
-            const response = await axios.get(`${API_URL}/startups/${id}`);
-            return response.data;
+            const user = authService.getCurrentUser();
+            if (!user || !user.token) {
+                throw new Error('No authenticated user found');
+            }
+
+            const response = await axios.get(`${API_URL}/startups/${startupId}`, {
+                headers: {
+                    'Authorization': `Bearer ${user.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            // Log the response for debugging
+            console.log('Startup data response:', response.data);
+            
+            // Use startupName as the primary name field
+            const startupData = response.data;
+            return {
+                name: startupData.startupName || startupData.companyName || startupData.name || 'Unknown Startup',
+                description: startupData.description || '',
+                ...startupData
+            };
         } catch (error) {
-            console.error('Error fetching startup:', error);
-            throw new Error(error.response?.data?.message || 'Failed to fetch startup');
+            console.error('Error fetching startup details:', error);
+            throw error.response?.data || error.message;
         }
     },
 
@@ -256,25 +276,48 @@ const startupService = {
                 throw new Error('No authenticated user found');
             }
 
-            // First get the startup profile to get the startupId
-            const startupProfile = await startupService.getStartupProfile();
-            if (!startupProfile || !startupProfile.id) {
-                throw new Error('Startup profile not found');
+            // Use the startupId from the offer data
+            const startupId = offerData.startupId || offerData.startup?.id;
+            if (!startupId) {
+                throw new Error('Startup ID not found in offer data');
             }
 
-            const response = await axios.put(`${API_URL}/startups/${startupProfile.id}/offers/${offerId}`, offerData, {
+            console.log('Updating offer with data:', JSON.stringify(offerData, null, 2));
+
+            // If only status is being updated, use the status endpoint
+            if (offerData.status && Object.keys(offerData).length === 2 && offerData.startupId) {
+                const response = await axios.put(`${API_URL}/startups/${startupId}/offers/${offerId}/status?status=${offerData.status}`, {}, {
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log('Status update response:', response.data);
+                return { ...offerData, id: offerId }; // Return minimal response for status updates
+            }
+
+            // For other updates, use the main endpoint
+            const response = await axios.put(`${API_URL}/startups/${startupId}/offers/${offerId}`, offerData, {
                 headers: {
                     'Authorization': `Bearer ${user.token}`,
                     'Content-Type': 'application/json'
                 }
             });
+
+            console.log('Update offer response:', response.data);
+
+            if (!response.data) {
+                throw new Error('No response data from update offer request');
+            }
+
             return response.data;
         } catch (error) {
             console.error('Error updating investment offer:', error);
-            if (error.response?.status === 403) {
-                throw new Error('You must be logged in as a startup to update investment offers');
+            console.error('Server error response:', error.response?.data);
+            if (error.response?.data) {
+                throw new Error(error.response.data);
             }
-            throw new Error(error.response?.data?.message || 'Failed to update investment offer');
+            throw new Error('Failed to update investment offer');
         }
     },
 

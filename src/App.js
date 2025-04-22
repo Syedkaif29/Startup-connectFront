@@ -12,6 +12,7 @@ import authService from './services/authService';
 import Portfolio from './pages/Portfolio';
 import StartupProfile from './pages/StartupProfile';
 import InvestorInvestments from "./pages/InvestorInvestments";
+import TransactionPage from "./pages/TransactionPage";
 
 // Error boundary component
 const ErrorBoundary = ({ children }) => {
@@ -164,6 +165,7 @@ function App() {
   }
 />
               <Route path="/startups/:id" element={<StartupProfile />} />
+              <Route path="/transactions/:startupId" element={<TransactionPage />} />
               <Route path="/startup/:id" element={<StartupProfile />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/" element={<Navigate to="/login" />} />

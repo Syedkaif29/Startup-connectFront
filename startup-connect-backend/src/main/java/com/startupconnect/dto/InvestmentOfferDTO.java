@@ -4,6 +4,8 @@ import com.startupconnect.model.InvestmentOffer;
 
 public class InvestmentOfferDTO {
     private Long id;
+    private Long investorId;
+    private Long startupId;
     private String investorCompanyName;
     private String investorName;
     private String status;
@@ -13,8 +15,14 @@ public class InvestmentOfferDTO {
     private Double amount;
     private Double equityPercentage;
 
+
+
+    public InvestmentOfferDTO() {}
+
     public InvestmentOfferDTO(InvestmentOffer offer, String investorCompanyName) {
         this.id = offer.getId();
+        this.investorId = offer.getInvestor() != null ? offer.getInvestor().getId() : null;
+        this.startupId = offer.getStartup() != null ? offer.getStartup().getId() : null;
         this.investorCompanyName = investorCompanyName;
         this.status = offer.getStatus().name();
         this.description = offer.getDescription();
@@ -28,6 +36,10 @@ public class InvestmentOfferDTO {
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public Long getInvestorId() { return investorId; }
+    public void setInvestorId(Long investorId) { this.investorId = investorId; }
+    public Long getStartupId() { return startupId; }
+    public void setStartupId(Long startupId) { this.startupId = startupId; }
     public String getInvestorCompanyName() { return investorCompanyName; }
     public void setInvestorCompanyName(String investorCompanyName) { this.investorCompanyName = investorCompanyName; }
     public String getInvestorName() { return investorName; }

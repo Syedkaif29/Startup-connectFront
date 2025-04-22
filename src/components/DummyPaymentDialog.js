@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-const DummyPaymentDialog = ({ open, amount, onClose, onSuccess }) => {
+const DummyPaymentDialog = ({ open, amount, onClose, onPaymentConfirmed, startupId, description }) => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [method, setMethod] = useState('card');
@@ -34,52 +34,56 @@ const DummyPaymentDialog = ({ open, amount, onClose, onSuccess }) => {
     setProcessing(true);
     setError('');
     setFileError('');
-    // Validate fields
-    if (method === 'card') {
-      if (!cardNumber || !expiry || !cvv) {
-        setError('Please fill all card details.'); setProcessing(false); return;
+    
+    try {
+      // Validate fields
+      if (method === 'card') {
+        if (!cardNumber || !expiry || !cvv) {
+          throw new Error('Please fill all card details.');
+        }
+        if (!/^\d{16}$/.test(cardNumber.replace(/\s/g, ''))) {
+          throw new Error('Card number must be 16 digits.');
+        }
+        if (!/^\d{3,4}$/.test(cvv)) {
+          throw new Error('CVV must be 3 or 4 digits.');
+        }
+      } else if (method === 'upi') {
+        if (!upiId) {
+          throw new Error('Please enter your UPI ID.');
+        }
+        if (!/^[\w.-]+@[\w.-]+$/.test(upiId)) {
+          throw new Error('Invalid UPI ID format.');
+        }
+        if (!file) {
+          throw new Error('Please upload a screenshot or PDF as payment proof.');
+        }
+        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+          throw new Error('Only .jpg, .png, or .pdf files are allowed.');
+        }
+      } else if (method === 'bank') {
+        if (!bankName || !accHolder || !accNumber || !ifsc) {
+          throw new Error('Please fill all bank transfer details.');
+        }
+        if (!/^\d{9,18}$/.test(accNumber)) {
+          throw new Error('Account Number must be 9-18 digits.');
+        }
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+          throw new Error('Invalid IFSC code.');
+        }
       }
-      if (!/^\d{16}$/.test(cardNumber.replace(/\s/g, ''))) {
-        setError('Card number must be 16 digits.'); setProcessing(false); return;
-      }
-      if (!/^\d{3,4}$/.test(cvv)) {
-        setError('CVV must be 3 or 4 digits.'); setProcessing(false); return;
-      }
-    } else if (method === 'upi') {
-      if (!upiId) {
-        setError('Please enter your UPI ID.'); setProcessing(false); return;
-      }
-      if (!/^[\w.-]+@[\w.-]+$/.test(upiId)) {
-        setError('Invalid UPI ID format.'); setProcessing(false); return;
-      }
-    } else if (method === 'bank') {
-      if (!bankName || !accHolder || !accNumber || !ifsc) {
-        setError('Please fill all bank transfer details.'); setProcessing(false); return;
-      }
-      if (!/^\d{9,18}$/.test(accNumber)) {
-        setError('Account Number must be 9-18 digits.'); setProcessing(false); return;
-      }
-      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
-        setError('Invalid IFSC code.'); setProcessing(false); return;
-      }
-    }
-    // File validation for UPI only
-    if (method === 'upi') {
-      if (!file) {
-        setFileError('Please upload a screenshot or PDF as payment proof.'); setProcessing(false); return;
-      }
-      const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-      if (!allowedTypes.includes(file.type)) {
-        setFileError('Only .jpg, .png, or .pdf files are allowed.'); setProcessing(false); return;
-      }
-    }
-    // Simulate payment delay
-    setTimeout(() => {
-      setProcessing(false);
+
+      // If all validations pass, call onPaymentConfirmed
+      await onPaymentConfirmed();
+      
+      // Reset and close dialog
       resetFields();
-      onSuccess();
       onClose();
-    }, 1200);
+    } catch (err) {
+      setError(err.message || 'Payment validation failed. Please check your details.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleFileChange = (e) => {

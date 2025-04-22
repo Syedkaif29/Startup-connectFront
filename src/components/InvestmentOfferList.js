@@ -3,7 +3,7 @@ import { Card, CardContent, Typography, Grid, Box, Chip, Button, Popover, Fade }
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 
-const InvestmentOfferList = ({ offers, isInvestor, onAccept, onNegotiate }) => {
+const InvestmentOfferList = ({ offers, isInvestor, onAccept, onNegotiate, startupId }) => {
   console.log('InvestmentOfferList isInvestor:', isInvestor);
   // Popover state at component level
   const [popoverAnchor, setPopoverAnchor] = useState(null);
@@ -56,62 +56,56 @@ const InvestmentOfferList = ({ offers, isInvestor, onAccept, onNegotiate }) => {
                 <Typography variant="body2" color="text.secondary">
                   Terms: {offer.terms}
                 </Typography>
-                <Chip label={offer.status || 'ACTIVE'} color="success" size="small" sx={{ mt: 1 }} />
-                {isInvestor && offer.status !== 'CLOSED' && (
-  <Box mt={2} display="flex" gap={1}>
-    <Button
-      variant="contained"
-      color="success"
-      startIcon={<CheckCircleIcon />}
-      sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2, boxShadow: 2, textTransform: 'none' }}
-      onClick={() => onAccept && onAccept(offer)}
-    >
-      Accept
-    </Button>
-    <Button
-      variant="contained"
-      color="warning"
-      startIcon={<HandshakeIcon />}
-      sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2, boxShadow: 2, textTransform: 'none', color: '#fff' }}
-      onClick={() => onNegotiate && onNegotiate(offer)}
-    >
-      Negotiate
-    </Button>
-  </Box>
-)}
-{isInvestor && offer.status === 'CLOSED' && (
-  <Box mt={2}>
-    <Chip label="CLOSED" color="default" size="medium" sx={{ fontWeight: 600, fontSize: '1rem', borderRadius: 2 }} />
-  </Box>
-)}
-                <Popover
-                  id="mouse-over-popover"
-                  sx={{ pointerEvents: 'none' }}
-                  open={Boolean(popoverAnchor) && popoverOfferId === offer.id}
-                  anchorEl={popoverAnchor}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-                  onClose={handlePopoverClose}
-                  disableRestoreFocus
-                  TransitionComponent={Fade}
-                  transitionDuration={200}
-                >
-                  <Box sx={{ p: 2, maxWidth: 260 }}>
-                    <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                      Offer Details
-                    </Typography>
-                    <Typography variant="body2"><b>Amount:</b> ${offer.amount?.toLocaleString()}</Typography>
-                    <Typography variant="body2"><b>Equity:</b> {offer.equityPercentage}%</Typography>
-                    <Typography variant="body2"><b>Description:</b> {offer.description}</Typography>
-                    <Typography variant="body2"><b>Terms:</b> {offer.terms}</Typography>
-                    <Typography variant="body2"><b>Status:</b> {offer.status || 'ACTIVE'}</Typography>
+                <Chip 
+                  label={offer.status || 'ACTIVE'} 
+                  color={offer.status === 'CLOSED' ? 'default' : 'success'} 
+                  size="small" 
+                  sx={{ mt: 1 }} 
+                />
+                {/* Action Buttons */}
+                {(onAccept || onNegotiate) && offer.status !== 'CLOSED' && (
+                  <Box mt={2} display="flex" gap={1}>
+                    {onAccept && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        onClick={() => onAccept(offer)}
+                        startIcon={<CheckCircleIcon />}
+                      >
+                        Accept
+                      </Button>
+                    )}
+                    {onNegotiate && (
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        size="small"
+                        onClick={() => onNegotiate(offer)}
+                        startIcon={<HandshakeIcon />}
+                      >
+                        Negotiate
+                      </Button>
+                    )}
                   </Box>
-                </Popover>
+                )}
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
+      {isInvestor && offers && offers.length > 0 && startupId && (
+        <Box mt={4} display="flex" justifyContent="center">
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={() => window.location.href = `/transactions/${startupId}`}
+          >
+            View Offers
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

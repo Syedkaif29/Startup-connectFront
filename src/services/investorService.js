@@ -1,5 +1,6 @@
 import axios from 'axios';
 import authService from './authService';
+import { jwtDecode } from 'jwt-decode';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -29,16 +30,31 @@ const investorService = {
             if (!user || !user.token) {
                 throw new Error('No authenticated user found');
             }
-            const response = await axios.get(`${API_URL}/investors/${investorId}`, {
+
+            // Use the investor profile endpoint
+            const response = await axios.get(`${API_URL}/investor/profile/${investorId}`, {
                 headers: { 
                     'Authorization': `Bearer ${user.token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            return response.data;
+            
+            const investorData = response.data;
+            return {
+                ...investorData,
+                name: investorData.companyName || 
+                      investorData.fullName || 
+                      investorData.name || 
+                      investorData.email ||
+                      `Investor #${investorId}`
+            };
         } catch (error) {
             console.error('Error fetching investor details:', error);
-            throw error.response?.data || error.message;
+            // Return a minimal object instead of throwing
+            return {
+                id: investorId,
+                name: `Investor #${investorId}`
+            };
         }
     },
 
@@ -191,7 +207,11 @@ const investorService = {
                 throw new Error('No authenticated user found');
             }
 
-            const response = await axios.get(`${API_URL}/investments/my`, {
+            // Get the current user's ID from the token
+            const decodedToken = jwtDecode(user.token);
+            const userId = decodedToken.sub; // sub contains the user ID in JWT
+
+            const response = await axios.get(`${API_URL}/transactions/investor/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${user.token}`,
                     'Content-Type': 'application/json'

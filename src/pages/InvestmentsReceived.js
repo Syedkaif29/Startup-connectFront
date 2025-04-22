@@ -1,48 +1,97 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Typography, Card, CardContent, Table, TableHead, TableRow, TableCell, TableBody, Paper, CircularProgress, Chip, Box, Tooltip } from '@mui/material';
-import startupService from '../services/startupService';
-import investorService from '../services/investorService';
+import { 
+  Container, 
+  Typography, 
+  Card, 
+  CardContent, 
+  Table, 
+  TableHead, 
+  TableRow, 
+  TableCell, 
+  TableBody, 
+  Paper, 
+  CircularProgress, 
+  Chip, 
+  Box,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Divider
+} from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
+import transactionService from '../services/transactionService';
+import { useNavigate } from 'react-router-dom';
 
 const InvestmentsReceived = () => {
-  const [investments, setInvestments] = useState([]);
+  const navigate = useNavigate();
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Map of investorId to investor name
-  const [investorNames, setInvestorNames] = useState({});
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
-    fetchInvestments();
+    fetchTransactions();
   }, []);
 
-  useEffect(() => {
-    // Fetch missing investor names if needed
-    const missingInvestorIds = investments
-      .filter(inv => (!inv.investorName && !inv.investor?.name) && inv.investorId && !investorNames[inv.investorId])
-      .map(inv => inv.investorId);
-    const uniqueIds = Array.from(new Set(missingInvestorIds));
-    if (uniqueIds.length > 0) {
-      uniqueIds.forEach(async (id) => {
-        try {
-          const investor = await investorService.getInvestorById(id);
-          setInvestorNames(prev => ({ ...prev, [id]: investor.name || investor.fullName || investor.companyName || '-' }));
-        } catch {
-          setInvestorNames(prev => ({ ...prev, [id]: '-' }));
-        }
-      });
-    }
-  }, [investments, investorNames]);
-
-  const fetchInvestments = async () => {
+  const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const offers = await startupService.getMyInvestmentOffers();
-      setInvestments(offers);
+      const data = await transactionService.getTransactionsByStartup();
+      console.log('Fetched transactions:', data);
+      setTransactions(data);
+      setError(null);
     } catch (err) {
-      setError(err.message);
+      console.error('Error fetching transactions:', err);
+      setError(err.message || 'Failed to fetch transactions');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenDialog = (transaction) => {
+    setSelectedTransaction(transaction);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedTransaction(null);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'ACCEPTED':
+        return 'success';
+      case 'PENDING':
+        return 'warning';
+      case 'REJECTED':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getInvestorDisplayName = (transaction) => {
+    return transaction.investorCompanyName || 
+           transaction.investorName || 
+           `Investor #${transaction.investorId}` || 
+           'Unknown Investor';
   };
 
   return (
@@ -59,50 +108,114 @@ const InvestmentsReceived = () => {
           ) : error ? (
             <Typography color="error">{error}</Typography>
           ) : (
-            <Table component={Paper}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Investor</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Equity (%)</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {investments.length === 0 ? (
+            <Paper>
+              <Table>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={5} align="center">No investments received yet.</TableCell>
+                    <TableCell>Investor</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Details</TableCell>
                   </TableRow>
-                ) : (
-                  investments.map((inv) => (
-                    <TableRow key={inv.id} hover>
-                      <TableCell>{
-                        inv.investorCompanyName || inv.investorName || inv.investor?.name || investorNames[inv.investorId] || '-'
-                      }</TableCell>
-                      <TableCell>${inv.amount?.toLocaleString()}</TableCell>
-                      <TableCell>{inv.equityPercentage ?? inv.equity ?? '-'}</TableCell>
-                      <TableCell>
-                        {(() => {
-                          const dateVal = inv.createdAt || inv.updatedAt || inv.date;
-                          return dateVal ? (
-                            <Tooltip title={new Date(dateVal).toLocaleString()} placement="top">
-                              <span>{new Date(dateVal).toLocaleDateString()}</span>
-                            </Tooltip>
-                          ) : '-';
-                        })()}
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={inv.status || 'ACTIVE'} color={inv.status === 'ACTIVE' ? 'success' : 'default'} size="small" />
-                      </TableCell>
+                </TableHead>
+                <TableBody>
+                  {transactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">No transactions found.</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    transactions.map((tx) => (
+                      <TableRow key={tx.id} hover>
+                        <TableCell>{getInvestorDisplayName(tx)}</TableCell>
+                        <TableCell align="right">${tx.amount?.toLocaleString()}</TableCell>
+                        <TableCell>{tx.transactionType ?? '-'}</TableCell>
+                        <TableCell>{formatDate(tx.transactionDate)}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={tx.status || 'PENDING'} 
+                            color={getStatusColor(tx.status)} 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title="View Details">
+                            <IconButton size="small" onClick={() => handleOpenDialog(tx)}>
+                              <InfoIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
           )}
         </CardContent>
       </Card>
+
+      {/* Transaction Details Dialog */}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Typography variant="h6">Transaction Details</Typography>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedTransaction && (
+            <Box>
+              <Typography variant="subtitle1" gutterBottom>
+                <b>Investor:</b> {getInvestorDisplayName(selectedTransaction)}
+              </Typography>
+              {selectedTransaction.investorDetails && (
+                <>
+                  <Typography variant="subtitle1" gutterBottom>
+                    <b>Investor Email:</b> {selectedTransaction.investorDetails.email || '-'}
+                  </Typography>
+                  <Typography variant="subtitle1" gutterBottom>
+                    <b>Location:</b> {selectedTransaction.investorDetails.location || '-'}
+                  </Typography>
+                </>
+              )}
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle1" gutterBottom>
+                <b>Amount:</b> ${selectedTransaction.amount?.toLocaleString() || '-'}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                <b>Type:</b> {selectedTransaction.transactionType ?? '-'}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                <b>Status:</b> 
+                <Chip 
+                  label={selectedTransaction.status || 'PENDING'} 
+                  color={getStatusColor(selectedTransaction.status)} 
+                  size="small" 
+                  sx={{ ml: 1 }}
+                />
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                <b>Date:</b> {formatDate(selectedTransaction.transactionDate)}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                <b>Description:</b> {selectedTransaction.description || '-'}
+              </Typography>
+              {selectedTransaction.terms && (
+                <Typography variant="subtitle1" gutterBottom>
+                  <b>Terms:</b> {selectedTransaction.terms}
+                </Typography>
+              )}
+              {selectedTransaction.equity && (
+                <Typography variant="subtitle1" gutterBottom>
+                  <b>Equity:</b> {selectedTransaction.equity}%
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

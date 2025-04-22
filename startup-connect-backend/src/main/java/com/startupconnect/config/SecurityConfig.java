@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/startups/investment-offers/**").hasRole("STARTUP")
                 .requestMatchers("/api/investor/profile").hasRole("INVESTOR")
                 .requestMatchers("/api/investor/dashboard/**").hasRole("INVESTOR")
+                .requestMatchers("/api/investments/my").hasRole("INVESTOR")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

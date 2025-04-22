@@ -87,13 +87,21 @@ public class InvestmentOfferService {
         List<InvestmentOfferDTO> dtos = new java.util.ArrayList<>();
         for (InvestmentOffer offer : offers) {
             String investorCompanyName = null;
+            String investorName = null;
+            Long investorId = null;
             if (offer.getInvestor() != null) {
-                InvestorProfile profile = investorProfileRepository.findByUserId(offer.getInvestor().getId()).orElse(null);
+                investorId = offer.getInvestor().getId();
+                investorName = offer.getInvestor().getFullName();
+                InvestorProfile profile = investorProfileRepository.findByUserId(investorId).orElse(null);
                 if (profile != null) {
                     investorCompanyName = profile.getCompanyName();
                 }
             }
-            dtos.add(new InvestmentOfferDTO(offer, investorCompanyName));
+            InvestmentOfferDTO dto = new InvestmentOfferDTO(offer, investorCompanyName);
+            dto.setInvestorName(investorName);
+            dto.setInvestorId(offer.getInvestor() != null ? offer.getInvestor().getId() : null);
+            dto.setStartupId(offer.getStartup() != null ? offer.getStartup().getId() : null);
+            dtos.add(dto);
         }
         return dtos;
     }

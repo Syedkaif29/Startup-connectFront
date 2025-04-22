@@ -23,6 +23,7 @@ import {
 import startupService from '../services/startupService';
 import authService from '../services/authService';
 import pitchDeckService from '../services/pitchDeckService';
+import investorService from '../services/investorService';
 import PitchDeckList from '../components/PitchDeckList';
 import InvestmentOfferList from '../components/InvestmentOfferList';
 
@@ -39,24 +40,6 @@ const StartupProfile = () => {
   // Payment modal state
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState(null);
-
-  // Accept offer handler (after payment)
-  const handleAcceptOffer = async (offer) => {
-    setAcceptError('');
-    setAcceptSuccess('');
-    setAccepting(true);
-    try {
-      await startupService.acceptInvestmentOffer(offer.id);
-      setAcceptSuccess('Offer accepted successfully!');
-      // Refresh offers
-      const offers = await startupService.getInvestmentOffers(id);
-      setInvestmentOffers(offers);
-    } catch (err) {
-      setAcceptError(err.message || 'Failed to accept offer.');
-    } finally {
-      setAccepting(false);
-    }
-  };
 
   // Trigger payment modal before accept
   const handleAcceptWithPayment = (offer) => {
@@ -76,6 +59,11 @@ const StartupProfile = () => {
   const [isInvestor, setIsInvestor] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState(null);
+
+  // Handler to navigate to TransactionPage
+  const navigateToOffers = () => {
+    window.location.href = `/transactions/${id}`;
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -203,6 +191,13 @@ const StartupProfile = () => {
           >
             {startup.startupName || 'Startup'}
           </Typography>
+          {isInvestor && (
+            <Box textAlign="center" mt={2}>
+              <Button variant="contained" color="primary" onClick={navigateToOffers}>
+                View Offers
+              </Button>
+            </Box>
+          )}
           {isInvestor && (
             <Box textAlign="center" mt={2}>
               <Button variant="contained" color="primary" onClick={() => setMessageDialogOpen(true)}>
@@ -400,19 +395,30 @@ const StartupProfile = () => {
           {acceptError && (
             <Alert severity="error" sx={{ mb: 2 }}>{acceptError}</Alert>
           )}
-            <InvestmentOfferList
-              offers={investmentOffers}
-              isInvestor={isInvestor}
-              onAccept={handleAcceptWithPayment}
-              onNegotiate={offer => alert(`Negotiate offer for $${offer.amount} / ${offer.equityPercentage}% equity`)}
-            />
+            <InvestmentOfferList offers={investmentOffers} isInvestor={isInvestor} startupId={id} />
             <DummyPaymentDialog
               open={paymentOpen}
               amount={selectedOffer?.amount}
               onClose={() => setPaymentOpen(false)}
-              onSuccess={() => {
+              onSuccess={async () => {
                 setPaymentOpen(false);
-                if (selectedOffer) handleAcceptOffer(selectedOffer);
+                if (selectedOffer && isInvestor) {
+                  // Store investment after successful payment
+                  setAccepting(true);
+                  setAcceptError('');
+                  setAcceptSuccess('');
+                  try {
+                    await investorService.invest({ offerId: selectedOffer.id, amount: selectedOffer.amount });
+                    setAcceptSuccess('Investment successful!');
+                    // Optionally refresh offers or investments
+                    const offers = await startupService.getInvestmentOffers(id);
+                    setInvestmentOffers(offers);
+                  } catch (err) {
+                    setAcceptError(err.message || 'Failed to invest.');
+                  } finally {
+                    setAccepting(false);
+                  }
+                }
               }}
             />
         </CardContent>
