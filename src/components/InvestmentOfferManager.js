@@ -86,6 +86,21 @@ const InvestmentOfferManager = ({ startupId }) => {
     setError('');
   };
 
+  const validateFormData = (data) => {
+    if (!data.amount || !data.equityPercentage || !data.description) {
+      return 'Please fill in all required fields';
+    }
+    const amount = parseFloat(data.amount);
+    const equity = parseFloat(data.equityPercentage);
+    if (isNaN(amount) || amount <= 0) {
+      return 'Amount must be a positive number';
+    }
+    if (isNaN(equity) || equity < 1 || equity > 100) {
+      return 'Equity percentage must be between 1 and 100';
+    }
+    return '';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -93,8 +108,9 @@ const InvestmentOfferManager = ({ startupId }) => {
       setError('');
 
       // Validate form data
-      if (!formData.amount || !formData.equityPercentage || !formData.description) {
-        throw new Error('Please fill in all required fields');
+      const validationError = validateFormData(formData);
+      if (validationError) {
+        throw new Error(validationError);
       }
 
       // Convert numeric values and format the data

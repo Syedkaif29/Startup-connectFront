@@ -8,7 +8,8 @@ import {
   Button,
   Grid,
   Alert,
-  InputAdornment
+  InputAdornment,
+  FormHelperText
 } from '@mui/material';
 import startupService from '../services/startupService';
 
@@ -19,14 +20,62 @@ const InvestmentOffer = ({ open, onClose, onSuccess }) => {
     description: '',
     terms: ''
   });
+  const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const validateField = (name, value) => {
+    if (name === 'amount') {
+      const numValue = Number(value);
+      if (!value || value === '') return 'Amount is required';
+      if (numValue <= 0) return 'Amount must be greater than 0';
+      if (isNaN(numValue)) return 'Please enter a valid number';
+      return '';
+    }
+    if (name === 'equity') {
+      const numValue = Number(value);
+      if (!value || value === '') return 'Equity is required';
+      if (numValue < 1 || numValue > 100) return 'Equity must be between 1% and 100%';
+      if (isNaN(numValue)) return 'Please enter a valid number';
+      return '';
+    }
+    if (name === 'description' && (!value || value.trim() === '')) {
+      return 'Description is required';
+    }
+    return '';
+  };
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
+    const { name, value } = e.target;
+    
+    // Only allow positive numbers for amount and equity
+    if ((name === 'amount' || name === 'equity') && value.startsWith('-')) {
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Validate and set error for the field
+    const fieldError = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: fieldError
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    Object.keys(formData).forEach(key => {
+      const fieldError = validateField(key, formData[key]);
+      if (fieldError) {
+        newErrors[key] = fieldError;
+      }
     });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
@@ -35,24 +84,21 @@ const InvestmentOffer = ({ open, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      // Validate form data
-      if (!formData.amount || !formData.equity || !formData.description) {
-        throw new Error('Please fill in all required fields');
+      if (!validateForm()) {
+        throw new Error('Please correct all errors before submitting');
       }
 
-      // Convert amount and equity to numbers
       const amount = Number(formData.amount);
       const equity = Number(formData.equity);
 
-      if (isNaN(amount) || isNaN(equity)) {
-        throw new Error('Amount and equity must be valid numbers');
+      // Final validation check
+      if (amount <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+      if (equity < 1 || equity > 100) {
+        throw new Error('Equity must be between 1% and 100%');
       }
 
-      if (amount <= 0 || equity <= 0 || equity > 100) {
-        throw new Error('Amount must be positive and equity must be between 0 and 100');
-      }
-
-      // Create the investment offer
       const offerData = {
         amount,
         equity,
@@ -86,28 +132,125 @@ const InvestmentOffer = ({ open, onClose, onSuccess }) => {
                 fullWidth
                 label="Investment Amount"
                 name="amount"
-                type="number"
+                type="text"
                 value={formData.amount}
-                onChange={handleChange}
                 required
+                error={!!errors.amount}
+                inputProps={{
+                  style: { 
+                    textAlign: 'right'
+                  }
+                }}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">$</InputAdornment>
                 }}
+                onKeyPress={(e) => {
+                  const charCode = e.which ? e.which : e.keyCode;
+                  if (
+                    charCode !== 46 && // decimal point
+                    charCode > 31 && 
+                    (charCode < 48 || charCode > 57)
+                  ) {
+                    e.preventDefault();
+                  }
+                  // Check for first character being a decimal point
+                  if (charCode === 46 && !formData.amount) {
+                    e.preventDefault();
+                  }
+                  // Check for multiple decimal points
+                  if (charCode === 46 && formData.amount.includes('.')) {
+                    e.preventDefault();
+                  }
+                }}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Remove any non-numeric characters except decimal point
+                  const sanitizedValue = value.replace(/[^\d.]/g, '');
+                  // Ensure only one decimal point
+                  const parts = sanitizedValue.split('.');
+                  const cleanValue = parts[0] + (parts.length > 1 ? '.' + parts[1] : '');
+                  
+                  setFormData(prev => ({
+                    ...prev,
+                    [e.target.name]: cleanValue
+                  }));
+                  
+                  // Validate and set error
+                  const fieldError = validateField(e.target.name, cleanValue);
+                  setErrors(prev => ({
+                    ...prev,
+                    [e.target.name]: fieldError
+                  }));
+                }}
               />
+              {errors.amount && (
+                <FormHelperText error>{errors.amount}</FormHelperText>
+              )}
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Equity Offered (%)"
+                label="Equity Offered"
                 name="equity"
-                type="number"
+                type="text"
                 value={formData.equity}
-                onChange={handleChange}
                 required
+                error={!!errors.equity}
+                inputProps={{
+                  style: { 
+                    textAlign: 'right'
+                  }
+                }}
                 InputProps={{
                   endAdornment: <InputAdornment position="end">%</InputAdornment>
                 }}
+                onKeyPress={(e) => {
+                  const charCode = e.which ? e.which : e.keyCode;
+                  if (
+                    charCode !== 46 && // decimal point
+                    charCode > 31 && 
+                    (charCode < 48 || charCode > 57)
+                  ) {
+                    e.preventDefault();
+                  }
+                  // Check for first character being a decimal point
+                  if (charCode === 46 && !formData.equity) {
+                    e.preventDefault();
+                  }
+                  // Check for multiple decimal points
+                  if (charCode === 46 && formData.equity.includes('.')) {
+                    e.preventDefault();
+                  }
+                }}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Remove any non-numeric characters except decimal point
+                  const sanitizedValue = value.replace(/[^\d.]/g, '');
+                  // Ensure only one decimal point
+                  const parts = sanitizedValue.split('.');
+                  const cleanValue = parts[0] + (parts.length > 1 ? '.' + parts[1] : '');
+                  
+                  // Ensure value doesn't exceed 100
+                  if (Number(cleanValue) > 100) {
+                    return;
+                  }
+                  
+                  setFormData(prev => ({
+                    ...prev,
+                    [e.target.name]: cleanValue
+                  }));
+                  
+                  // Validate and set error
+                  const fieldError = validateField(e.target.name, cleanValue);
+                  setErrors(prev => ({
+                    ...prev,
+                    [e.target.name]: fieldError
+                  }));
+                }}
               />
+              {errors.equity && (
+                <FormHelperText error>{errors.equity}</FormHelperText>
+              )}
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -119,7 +262,11 @@ const InvestmentOffer = ({ open, onClose, onSuccess }) => {
                 value={formData.description}
                 onChange={handleChange}
                 required
+                error={!!errors.description}
               />
+              {errors.description && (
+                <FormHelperText error>{errors.description}</FormHelperText>
+              )}
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -136,7 +283,11 @@ const InvestmentOffer = ({ open, onClose, onSuccess }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            disabled={loading || Object.keys(errors).length > 0}
+          >
             {loading ? 'Creating...' : 'Create Offer'}
           </Button>
         </DialogActions>

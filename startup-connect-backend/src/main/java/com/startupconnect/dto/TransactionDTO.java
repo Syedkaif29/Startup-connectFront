@@ -13,6 +13,8 @@ public class TransactionDTO {
     private String description;
     private String investorName;
     private String investorCompanyName;
+    private String startupName;
+    private String startupStage;
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -35,4 +37,16 @@ public class TransactionDTO {
     public void setInvestorName(String investorName) { this.investorName = investorName; }
     public String getInvestorCompanyName() { return investorCompanyName; }
     public void setInvestorCompanyName(String investorCompanyName) { this.investorCompanyName = investorCompanyName; }
+    public String getStartupName() {
+        return startupName;
+    }
+    public void setStartupName(String startupName) {
+        this.startupName = startupName;
+    }
+    public String getStartupStage() {
+        return startupStage;
+    }
+    public void setStartupStage(String startupStage) {
+        this.startupStage = startupStage;
+    }
 }

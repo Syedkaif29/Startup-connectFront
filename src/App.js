@@ -108,70 +108,78 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
-          <Navbar darkMode={darkMode} toggleTheme={toggleTheme} />
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<Home />} /> {/*src\pages\Home.js */}
-              <Route path="/login" element={<Login />} /> {/*src\pages\Login.js */}
-              <Route path="/register" element={<Register />} /> {/*src\pages\Register.js */}
-              <Route path="/register-admin" element={<RegisterAdmin />} />
-              <Route path="/startups" element={<Startups />} />
-              <Route
-                path="/investors"
-                element={
-                  <ProtectedRoute>
-                    <Investors />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['ADMIN']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/startup-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['STARTUP']}>
-                    <StartupDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/investments-received"
-                element={
-                  <ProtectedRoute allowedRoles={['STARTUP']}>
-                    <InvestmentsReceived />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/investor-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['INVESTOR']}>
-                    <InvestorDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/my-investments"
-  element={
-    <ProtectedRoute allowedRoles={['INVESTOR']}>
-      <InvestorInvestments />
-    </ProtectedRoute>
-  }
-/>
-              <Route path="/startups/:id" element={<StartupProfile />} />
-              <Route path="/transactions/:startupId" element={<TransactionPage />} />
-              <Route path="/startup/:id" element={<StartupProfile />} />
-              <Route path="/portfolio" element={<Portfolio />} />
-              <Route path="/" element={<Navigate to="/login" />} />
-            </Routes>
-          </Suspense>
-          <Footer />
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            minHeight: '100vh'
+          }}>
+            <Navbar darkMode={darkMode} toggleTheme={toggleTheme} />
+            <Box sx={{ flex: 1, mb: 8 }}>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  <Route path="/" element={<Home />} /> {/*src\pages\Home.js */}
+                  <Route path="/login" element={<Login />} /> {/*src\pages\Login.js */}
+                  <Route path="/register" element={<Register />} /> {/*src\pages\Register.js */}
+                  <Route path="/register-admin" element={<RegisterAdmin />} />
+                  <Route path="/startups" element={<Startups />} />
+                  <Route
+                    path="/investors"
+                    element={
+                      <ProtectedRoute>
+                        <Investors />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin-dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['ADMIN']}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/startup-dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['STARTUP']}>
+                        <StartupDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/investments-received"
+                    element={
+                      <ProtectedRoute allowedRoles={['STARTUP']}>
+                        <InvestmentsReceived />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/investor-dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['INVESTOR']}>
+                        <InvestorDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/my-investments"
+                    element={
+                      <ProtectedRoute allowedRoles={['INVESTOR']}>
+                        <InvestorInvestments />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/startups/:id" element={<StartupProfile />} />
+                  <Route path="/transactions/:startupId" element={<TransactionPage />} />
+                  <Route path="/startup/:id" element={<StartupProfile />} />
+                  <Route path="/portfolio" element={<Portfolio />} />
+                  <Route path="/" element={<Navigate to="/login" />} />
+                </Routes>
+              </Suspense>
+            </Box>
+            <Footer />
+          </Box>
         </Router>
       </ThemeProvider>
     </Provider>

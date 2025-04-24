@@ -50,25 +50,53 @@ const Login = () => {
     };
 
     return (
-        <Container component="main" maxWidth="xs">
-            <Box
-                sx={{
-                    marginTop: 8,
+        <Box
+            sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#fff',
+            }}
+        >
+            <Container component="main" maxWidth="sm" sx={{ display: 'flex', justifyContent: 'center' }}>
+                <Paper elevation={6} sx={{
+                    p: { xs: 4, sm: 6 },
+                    width: { xs: '100%', sm: 420 },
+                    borderRadius: 4,
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                }}
-            >
-                <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-                    <Typography component="h1" variant="h5" align="center" gutterBottom>
-                        Login
+                    transition: 'box-shadow 0.3s cubic-bezier(.4,2,.6,1), transform 0.3s cubic-bezier(.4,2,.6,1)',
+                    '&:hover': {
+                        boxShadow: '0 16px 48px 0 rgba(31,38,135,0.28)',
+                        transform: 'scale(1.03)',
+                    },
+                }}>
+                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+                        <video 
+                            src="/logo.mp4"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            style={{ width: 144, height: 144, borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', objectFit: 'cover' }}
+                            aria-label="Logo animation"
+                        />
+                    </Box>
+                    <Typography component="h1" variant="h4" align="center" fontWeight={700} gutterBottom>
+                        Welcome Back
+                    </Typography>
+                    <Typography variant="subtitle1" align="center" color="text.secondary" sx={{ mb: 2 }}>
+                        Sign in to your account
                     </Typography>
                     {error && (
                         <Alert severity="error" sx={{ mb: 2 }}>
                             {error}
                         </Alert>
                     )}
-                    <Box component="form" onSubmit={handleSubmit} noValidate>
+                    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
                         <TextField
                             margin="normal"
                             required
@@ -80,6 +108,9 @@ const Login = () => {
                             autoFocus
                             value={formData.email}
                             onChange={handleChange}
+                            size="large"
+                            sx={{ fontSize: 18, mb: 2 }}
+                            InputProps={{ sx: { fontSize: 18, height: 56 } }}
                         />
                         <TextField
                             margin="normal"
@@ -92,20 +123,31 @@ const Login = () => {
                             autoComplete="current-password"
                             value={formData.password}
                             onChange={handleChange}
+                            size="large"
+                            sx={{ fontSize: 18, mb: 2 }}
+                            InputProps={{ sx: { fontSize: 18, height: 56 } }}
                         />
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
-                            sx={{ mt: 3, mb: 2 }}
+                            sx={{
+                                mt: 3, mb: 2, py: 1.5, fontSize: 18, fontWeight: 600, borderRadius: 3,
+                                boxShadow: '0 4px 20px 0 rgba(31, 38, 135, 0.10)',
+                                background: 'linear-gradient(90deg, #1976d2 0%, #64b5f6 100%)',
+                                transition: 'background 0.3s',
+                                '&:hover': {
+                                    background: 'linear-gradient(90deg, #1565c0 0%, #42a5f5 100%)',
+                                },
+                            }}
                             disabled={loading}
                         >
                             {loading ? 'Logging in...' : 'Login'}
                         </Button>
                     </Box>
                 </Paper>
-            </Box>
-        </Container>
+            </Container>
+        </Box>
     );
 };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-    Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, CircularProgress, IconButton, Tooltip, Alert
+    Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, CircularProgress, IconButton, Tooltip, Alert, Box
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import transactionService from '../services/transactionService';
@@ -46,35 +46,9 @@ const InvestorInvestments = () => {
             const data = await transactionService.getTransactionsByInvestor(email);
             console.log('Fetched investments:', data);
             
-            // Fetch startup details for each transaction
-            const startupDetailsMap = {};
-            for (const transaction of data) {
-                if (transaction.startupId && !startupDetailsMap[transaction.startupId]) {
-                    try {
-                        console.log('Fetching startup details for ID:', transaction.startupId);
-                        const startupData = await startupService.getStartupById(transaction.startupId);
-                        console.log('Fetched startup data:', startupData);
-                        
-                        // Use startupName as the primary name field
-                        startupDetailsMap[transaction.startupId] = {
-                            name: startupData.startupName || 'Unknown Startup',
-                            description: startupData.description || '',
-                            ...startupData
-                        };
-                    } catch (err) {
-                        console.error(`Error fetching startup details for ID ${transaction.startupId}:`, err);
-                        startupDetailsMap[transaction.startupId] = { 
-                            name: transaction.startupName || 'Unknown Startup',
-                            description: 'Unable to fetch startup details'
-                        };
-                    }
-                }
-            }
-            
-            console.log('Startup details map:', startupDetailsMap);
-            setStartupDetails(startupDetailsMap);
+            // No need to fetch startup details separately as they're included in the DTO
             setTransactions(data);
-            setError(null); // Clear any previous errors
+            setError(null);
         } catch (err) {
             console.error('Error fetching investments:', err);
             if (err.response?.status === 403) {
@@ -156,6 +130,16 @@ const InvestorInvestments = () => {
         });
     };
 
+    const getStatusColor = (status) => {
+        if (status === 'ACCEPTED') return 'success';
+        if (status === 'PENDING') return 'warning';
+        return 'default';
+    };
+
+    const getStartupDisplayName = (transaction) => {
+        return transaction.startupName || 'Unknown Startup';
+    };
+
     return (
         <Container maxWidth="md" sx={{ mt: 4 }}>
             <Typography variant="h4" gutterBottom>
@@ -169,46 +153,56 @@ const InvestorInvestments = () => {
             {loading ? (
                 <CircularProgress />
             ) : !error && (
-                <TableContainer component={Paper} sx={{ mt: 3 }}>
+                <TableContainer component={Paper}>
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>Startup Name</TableCell>
+                                <TableCell>Startup</TableCell>
                                 <TableCell>Amount</TableCell>
                                 <TableCell>Type</TableCell>
                                 <TableCell>Date</TableCell>
                                 <TableCell>Status</TableCell>
-                                <TableCell>Details</TableCell>
+                                <TableCell>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {transactions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} align="center">No transactions found.</TableCell>
+                                    <TableCell colSpan={6} align="center">
+                                        No transactions found
+                                    </TableCell>
                                 </TableRow>
                             ) : (
-                                transactions.map((tx) => (
-                                    <TableRow key={tx.id} hover>
+                                transactions.map((transaction) => (
+                                    <TableRow key={transaction.id}>
                                         <TableCell>
-                                            {startupDetails[tx.startupId]?.name || tx.startupName || 'Unknown Startup'}
+                                            <Box>
+                                                <Typography variant="body1">
+                                                    {getStartupDisplayName(transaction)}
+                                                </Typography>
+                                                {transaction.startupStage && (
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        {transaction.startupStage}
+                                                    </Typography>
+                                                )}
+                                            </Box>
                                         </TableCell>
-                                        <TableCell>${tx.amount?.toLocaleString()}</TableCell>
-                                        <TableCell>{tx.transactionType ?? '-'}</TableCell>
-                                        <TableCell>{formatDate(tx.transactionDate)}</TableCell>
+                                        <TableCell>${transaction.amount?.toLocaleString()}</TableCell>
+                                        <TableCell>{transaction.transactionType || '-'}</TableCell>
+                                        <TableCell>{formatDate(transaction.transactionDate)}</TableCell>
                                         <TableCell>
-                                            <Chip 
-                                                label={tx.status || 'PENDING'} 
-                                                color={tx.status === 'ACCEPTED' ? 'success' : 
-                                                       tx.status === 'PENDING' ? 'warning' : 'default'} 
-                                                size="small" 
+                                            <Chip
+                                                label={transaction.status || 'Unknown'}
+                                                color={getStatusColor(transaction.status)}
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            <Tooltip title="View Details">
-                                                <IconButton size="small" onClick={() => handleOpenDialog(tx)}>
-                                                    <InfoIcon />
-                                                </IconButton>
-                                            </Tooltip>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleOpenDialog(transaction)}
+                                            >
+                                                <InfoIcon />
+                                            </IconButton>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -219,46 +213,35 @@ const InvestorInvestments = () => {
             )}
             {/* Investment Details Dialog */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle>Investment Details</DialogTitle>
+                <DialogTitle>
+                    <Typography variant="h6">Transaction Details</Typography>
+                </DialogTitle>
                 <DialogContent dividers>
                     {selectedInvestment && (
-                        <>
+                        <Box>
                             <Typography variant="subtitle1" gutterBottom>
-                                <b>Startup:</b> {startupDetails[selectedInvestment.startupId]?.name || selectedInvestment.startupName || 'Unknown Startup'}
+                                <b>Startup:</b> {getStartupDisplayName(selectedInvestment)}
                             </Typography>
-                            {startupDetails[selectedInvestment.startupId]?.description && (
+                            {selectedInvestment.startupStage && (
                                 <Typography variant="subtitle1" gutterBottom>
-                                    <b>Startup Description:</b> {startupDetails[selectedInvestment.startupId].description}
+                                    <b>Stage:</b> {selectedInvestment.startupStage}
                                 </Typography>
                             )}
                             <Typography variant="subtitle1" gutterBottom>
-                                <b>Amount:</b> ${selectedInvestment.amount?.toLocaleString() || '-'}
+                                <b>Amount:</b> ${selectedInvestment.amount?.toLocaleString()}
                             </Typography>
                             <Typography variant="subtitle1" gutterBottom>
-                                <b>Type:</b> {selectedInvestment.transactionType ?? '-'}
-                            </Typography>
-                            <Typography variant="subtitle1" gutterBottom>
-                                <b>Status:</b> {selectedInvestment.status || '-'}
+                                <b>Type:</b> {selectedInvestment.transactionType || '-'}
                             </Typography>
                             <Typography variant="subtitle1" gutterBottom>
                                 <b>Date:</b> {formatDate(selectedInvestment.transactionDate)}
                             </Typography>
-                            {selectedInvestment.description && (
+                            {selectedInvestment.status && (
                                 <Typography variant="subtitle1" gutterBottom>
-                                    <b>Description:</b> {selectedInvestment.description}
+                                    <b>Status:</b> {selectedInvestment.status}
                                 </Typography>
                             )}
-                            {selectedInvestment.equity && (
-                                <Typography variant="subtitle1" gutterBottom>
-                                    <b>Equity:</b> {selectedInvestment.equity}%
-                                </Typography>
-                            )}
-                            {selectedInvestment.terms && (
-                                <Typography variant="subtitle1" gutterBottom>
-                                    <b>Terms:</b> {selectedInvestment.terms}
-                                </Typography>
-                            )}
-                        </>
+                        </Box>
                     )}
                 </DialogContent>
                 <DialogActions>

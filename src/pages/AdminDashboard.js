@@ -92,7 +92,7 @@ const AdminDashboard = () => {
     
     try {
       if (tabValue === 0) {
-        // Fetch users
+        // Fetch users with full details
         const response = await fetch('http://localhost:8080/api/admin/users', {
           headers: {
             'Authorization': `Bearer ${authService.getToken()}`
@@ -104,9 +104,14 @@ const AdminDashboard = () => {
         }
         
         const data = await response.json();
-        setUsers(data);
+        // Map user data to include full name
+        const mappedUsers = data.map(user => ({
+          ...user,
+          name: user.fullName || user.firstName + ' ' + user.lastName || user.email
+        }));
+        setUsers(mappedUsers);
       } else if (tabValue === 1) {
-        // Fetch investors
+        // Fetch investors with full details
         const response = await fetch('http://localhost:8080/api/admin/investors', {
           headers: {
             'Authorization': `Bearer ${authService.getToken()}`
@@ -118,9 +123,14 @@ const AdminDashboard = () => {
         }
         
         const data = await response.json();
-        setInvestors(data);
+        const mappedInvestors = data.map(investor => ({
+          ...investor,
+          name: investor.user?.fullName || investor.companyName || investor.user?.email || 'Unknown Investor',
+          email: investor.user?.email || '-'
+        }));
+        setInvestors(mappedInvestors);
       } else if (tabValue === 2) {
-        // Fetch transactions
+        // Fetch transactions with related data
         const response = await fetch('http://localhost:8080/api/admin/transactions', {
           headers: {
             'Authorization': `Bearer ${authService.getToken()}`
@@ -131,8 +141,17 @@ const AdminDashboard = () => {
           throw new Error('Failed to fetch transactions');
         }
         
-        const data = await response.json();
-        setTransactions(data);
+        const transactionsData = await response.json();
+        
+        // Map transactions with investor and startup names from the DTO
+        const mappedTransactions = transactionsData.map(transaction => ({
+          ...transaction,
+          investorName: transaction.investorName || transaction.investorCompanyName || 'Unknown Investor',
+          startupName: transaction.startupName || 'Unknown Startup',
+          stage: transaction.startupStage || 'N/A'
+        }));
+
+        setTransactions(mappedTransactions);
       }
     } catch (err) {
       setError(err.message || 'An error occurred while fetching data');
@@ -462,14 +481,31 @@ const AdminDashboard = () => {
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>{transaction.id}</TableCell>
-                      <TableCell>{transaction.startupName}</TableCell>
-                      <TableCell>{transaction.investorName}</TableCell>
-                      <TableCell>${transaction.amount}</TableCell>
-                      <TableCell>{transaction.stage}</TableCell>
-                      <TableCell>{formatDate(transaction.date)}</TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body1">
+                            {transaction.startupName || 'Unknown Startup'}
+                          </Typography>
+                          {transaction.startupStage && (
+                            <Typography variant="body2" color="textSecondary">
+                              {transaction.startupStage}
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body1">
+                            {transaction.investorCompanyName || transaction.investorName || 'Unknown Investor'}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>${transaction.amount?.toLocaleString() || 0}</TableCell>
+                      <TableCell>{transaction.startupStage || 'N/A'}</TableCell>
+                      <TableCell>{formatDate(transaction.transactionDate)}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={transaction.status} 
+                          label={transaction.status || 'PENDING'} 
                           color={getStatusColor(transaction.status)} 
                           size="small" 
                         />

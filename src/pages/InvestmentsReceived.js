@@ -113,6 +113,7 @@ const InvestmentsReceived = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Investor</TableCell>
+                    <TableCell>Startup</TableCell>
                     <TableCell align="right">Amount</TableCell>
                     <TableCell>Type</TableCell>
                     <TableCell>Date</TableCell>
@@ -123,12 +124,22 @@ const InvestmentsReceived = () => {
                 <TableBody>
                   {transactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">No transactions found.</TableCell>
+                      <TableCell colSpan={7} align="center">No transactions found.</TableCell>
                     </TableRow>
                   ) : (
                     transactions.map((tx) => (
                       <TableRow key={tx.id} hover>
                         <TableCell>{getInvestorDisplayName(tx)}</TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {tx.startupName || 'Unknown Startup'}
+                          </Typography>
+                          {tx.startupStage && (
+                            <Typography variant="caption" color="textSecondary">
+                              {tx.startupStage}
+                            </Typography>
+                          )}
+                        </TableCell>
                         <TableCell align="right">${tx.amount?.toLocaleString()}</TableCell>
                         <TableCell>{tx.transactionType ?? '-'}</TableCell>
                         <TableCell>{formatDate(tx.transactionDate)}</TableCell>
@@ -164,6 +175,15 @@ const InvestmentsReceived = () => {
         <DialogContent dividers>
           {selectedTransaction && (
             <Box>
+              <Typography variant="subtitle1" gutterBottom>
+                <b>Startup:</b> {selectedTransaction.startupName || 'Unknown Startup'}
+              </Typography>
+              {selectedTransaction.startupStage && (
+                <Typography variant="subtitle1" gutterBottom>
+                  <b>Stage:</b> {selectedTransaction.startupStage}
+                </Typography>
+              )}
+              <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle1" gutterBottom>
                 <b>Investor:</b> {getInvestorDisplayName(selectedTransaction)}
               </Typography>

@@ -94,6 +94,12 @@ public class TransactionController {
             dto.setInvestorCompanyName(t.getInvestor().getCompanyName());
         }
         
+        // Add startup details
+        if (t.getStartup() != null) {
+            dto.setStartupName(t.getStartup().getStartupName());
+            dto.setStartupStage(t.getStartup().getFundingStage());
+        }
+        
         return dto;
     }
 }

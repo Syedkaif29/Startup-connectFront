@@ -11,13 +11,16 @@ const investorService = {
             if (!user || !user.token) {
                 throw new Error('No authenticated user found');
             }
-            const response = await axios.get(`${API_URL}/investors`, {
+            const response = await axios.get(`${API_URL}/admin/investors`, {
                 headers: { 
                     'Authorization': `Bearer ${user.token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            return response.data;
+            return response.data.map(investor => ({
+                ...investor,
+                name: investor.companyName || investor.fullName || `Investor #${investor.id}`
+            }));
         } catch (error) {
             console.error('Error fetching investors:', error);
             throw error.response?.data || error.message;
@@ -113,13 +116,21 @@ const investorService = {
             if (!user || !user.token) {
                 throw new Error('No authenticated user found');
             }
-            const response = await axios.get(`${API_URL}/investments/trending`, {
+            const response = await axios.get(`${API_URL}/admin/transactions`, {
                 headers: { 
                     'Authorization': `Bearer ${user.token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            return response.data;
+            // Sort transactions by amount in descending order and take top 10
+            return response.data
+                .sort((a, b) => b.amount - a.amount)
+                .slice(0, 10)
+                .map(transaction => ({
+                    ...transaction,
+                    startupName: transaction.startup?.name || 'Unknown Startup',
+                    investorName: transaction.investor?.name || 'Unknown Investor'
+                }));
         } catch (error) {
             console.error('Error fetching trending investments:', error);
             throw error.response?.data || error.message;
